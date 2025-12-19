@@ -5,8 +5,10 @@ const ABACUS_API_CONFIG = {
   endpoint: 'https://routellm.abacus.ai/v1/chat/completions',
   sharedApiKey: 's2_114636cbfb9b4f4194185d452c6b19f8',
   model: 'deepseek-ai/DeepSeek-V3.2',
-  timeout: 30000, // 30 second timeout
-  freeTierLimit: 10 // 10 analyses per day for free tier
+  timeout: 60000, // 60 second timeout (increased from 30)
+  freeTierLimit: 10, // 10 analyses per day for free tier
+  maxInputChars: 1000, // Reduced from 2000 for faster processing
+  maxTokens: 400 // Reduced from 600 for faster response
 };
 
 /**
@@ -81,7 +83,7 @@ function buildPrompt(text, settings) {
 
 Article:
 ---
-${text.substring(0, 2000)}
+${text.substring(0, ABACUS_API_CONFIG.maxInputChars)}
 ---
 Counterarguments:`;
 
@@ -146,7 +148,7 @@ async function getCounterargumentsFromAbacus(text, settings) {
           content: prompt
         }
       ],
-      max_tokens: 600,
+      max_tokens: ABACUS_API_CONFIG.maxTokens,
       temperature: 0.5
     };
 
@@ -205,7 +207,7 @@ async function getCounterargumentsFromAbacus(text, settings) {
 
     if (error.name === 'AbortError') {
       console.error("Background: Request was aborted (timeout)");
-      return "Error: Request timed out after 30 seconds. Please try again.";
+      return "Error: Request timed out after 60 seconds. Please try again.";
     }
 
     if (error instanceof TypeError && error.message.includes('fetch')) {

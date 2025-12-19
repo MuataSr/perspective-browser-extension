@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Extension API Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    #output { white-space: pre-wrap; background: #f5f5f5; padding: 15px; margin-top: 10px; border-radius: 5px; }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+  <h1>Testing Extension API Call</h1>
+  <button onclick="testExtensionAPI()">Test Extension API</button>
+  <div id="output"></div>
+
+  <script>
+    async function testExtensionAPI() {
+      const output = document.getElementById('output');
+      output.innerHTML = 'Testing Extension API...\n\n';
+
+      const apiKey = 's2_114636cbfb9b4f4194185d452c6b19f8';
+      const endpoint = 'https://routellm.abacus.ai/v1/chat/completions';
+
+      // Sample article text (1000 chars)
+      const sampleText = `Artificial intelligence is rapidly transforming the way we live and work. From automated customer service chatbots to advanced machine learning algorithms that can predict market trends, AI is becoming an integral part of modern business operations. Many experts believe that AI will create more jobs than it eliminates, as it requires human oversight and maintenance. However, critics argue that the rapid adoption of AI could lead to widespread job displacement, particularly in industries that rely heavily on routine tasks. The key to successful AI integration lies in finding the right balance between automation and human expertise, ensuring that technology augments rather than replaces human workers.`;
+
+      const prompt = `You are a critical thinking coach named "Perspective". Your tone is helpful, neutral, and educational. Below is an article. Please provide a concise summary of the main counterarguments or alternative perspectives to the arguments presented in this article. Present them as a bulleted list. Do not add any preamble or conclusion, only the bulleted list.
+
+Article:
+---
+${sampleText.substring(0, 1000)}
+---
+Counterarguments:
+
+Additional Analysis:
+Also identify any logical fallacies present in the arguments (e.g., ad hominem, strawman, false dilemma, appeal to authority).
+Also assess the credibility of sources cited and the author's expertise on this topic.
+Also note any potential bias in the presentation of information or loaded language.`;
+
+      const requestBody = {
+        model: 'deepseek-ai/DeepSeek-V3.2',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 400,
+        temperature: 0.5
+      };
+
+      const startTime = Date.now();
+
+      try {
+        console.log('Starting API call...');
+        output.innerHTML += `[${new Date().toLocaleTimeString()}] Starting API call...\n`;
+        output.innerHTML += `Prompt length: ${prompt.length} chars\n`;
+        output.innerHTML += `Sample text: ${sampleText.substring(0, 1000).length} chars\n\n`;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          console.log('Timeout triggered after 60 seconds');
+          output.innerHTML += `\n[${new Date().toLocaleTimeString()}] ❌ TIMEOUT after 60 seconds!\n`;
+          controller.abort();
+        }, 60000);
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000;
+
+        console.log('Response received:', response.status);
+        console.log('Duration:', duration, 'seconds');
+
+        output.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ Response received!\n`;
+        output.innerHTML += `Status: ${response.status}\n`;
+        output.innerHTML += `Duration: ${duration.toFixed(2)} seconds\n\n`;
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API Error:', errorText);
+          output.innerHTML += `<span class="error">❌ API ERROR:</span>\n${errorText}\n`;
+          return;
+        }
+
+        const data = await response.json();
+        console.log('Response data:', data);
+        output.innerHTML += `<span class="success">✅ SUCCESS!</span>\n\n`;
+        output.innerHTML += `<span class="info">Response:</span>\n`;
+        output.innerHTML += `${JSON.stringify(data, null, 2)}\n\n`;
+
+        const result = data.choices?.[0]?.message?.content;
+        if (result) {
+          output.innerHTML += `<span class="info">Extracted Content:</span>\n${result}`;
+        }
+
+      } catch (error) {
+        const endTime = Date.now();
+        const duration = (endTime - startTime) / 1000;
+        console.error('Error:', error);
+        output.innerHTML += `\n<span class="error">❌ ERROR:</span>\n`;
+        output.innerHTML += `Message: ${error.message}\n`;
+        output.innerHTML += `Duration: ${duration.toFixed(2)} seconds\n`;
+        output.innerHTML += `Error name: ${error.name}\n`;
+
+        if (error.name === 'AbortError') {
+          output.innerHTML += `\n<span class="error">The request was aborted (likely timeout)</span>\n`;
+        }
+      }
+    }
+  </script>
+</body>
+</html>
