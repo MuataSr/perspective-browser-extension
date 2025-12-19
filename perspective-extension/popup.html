@@ -43,108 +43,144 @@
 
     <div class="settings-panel-content">
       <!-- API Configuration Section -->
-      <section class="settings-section">
-        <h3>API Configuration</h3>
-        <div class="radio-group">
-          <div class="radio-option">
-            <input type="radio" id="use-shared" name="api-mode" value="shared" checked>
-            <label for="use-shared">
-              <span class="option-title">Free Tier</span>
-              <span class="option-description">10 analyses per day</span>
-              <span class="option-note">Uses shared API key</span>
-            </label>
+      <div class="accordion-card" data-section="api">
+        <div class="accordion-header">
+          <h3>API Configuration</h3>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" id="use-shared" name="api-mode" value="shared" checked>
+              <label for="use-shared">
+                <span class="option-title">Free Tier</span>
+                <span class="option-description">10 analyses per day</span>
+                <span class="option-note">Uses shared API key</span>
+              </label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="use-personal" name="api-mode" value="personal">
+              <label for="use-personal">
+                <span class="option-title">Personal Key</span>
+                <span class="option-description">Unlimited analyses</span>
+                <span class="option-note">Use your own Abacus AI key</span>
+              </label>
+            </div>
           </div>
-          <div class="radio-option">
-            <input type="radio" id="use-personal" name="api-mode" value="personal">
-            <label for="use-personal">
-              <span class="option-title">Personal Key</span>
-              <span class="option-description">Unlimited analyses</span>
-              <span class="option-note">Use your own Abacus AI key</span>
-            </label>
+          <div class="personal-key-section" id="personal-key-section" style="display: none;">
+            <label for="user-api-key">Abacus AI API Key</label>
+            <div class="key-input-container">
+              <input type="password" id="user-api-key" placeholder="Enter your Abacus AI API key">
+              <button id="test-key-btn" class="btn-secondary">Test</button>
+            </div>
+            <div id="key-status" class="status-message"></div>
           </div>
         </div>
-        <div class="personal-key-section" id="personal-key-section" style="display: none;">
-          <label for="user-api-key">Abacus AI API Key</label>
-          <div class="key-input-container">
-            <input type="password" id="user-api-key" placeholder="Enter your Abacus AI API key">
-            <button id="test-key-btn" class="btn-secondary">Test</button>
-          </div>
-          <div id="key-status" class="status-message"></div>
-        </div>
-      </section>
+      </div>
 
       <!-- Appearance Section -->
-      <section class="settings-section">
-        <h3>Appearance</h3>
-        <div class="radio-group">
-          <div class="radio-option">
-            <input type="radio" id="theme-auto" name="theme-mode" value="auto" checked>
-            <label for="theme-auto">
-              <span class="option-title">Auto</span>
-              <span class="option-description">Follow system preference</span>
-            </label>
-          </div>
-          <div class="radio-option">
-            <input type="radio" id="theme-dark" name="theme-mode" value="dark">
-            <label for="theme-dark">
-              <span class="option-title">Dark</span>
-              <span class="option-description">Always use dark theme</span>
-            </label>
-          </div>
-          <div class="radio-option">
-            <input type="radio" id="theme-light" name="theme-mode" value="light">
-            <label for="theme-light">
-              <span class="option-title">Light</span>
-              <span class="option-description">Always use light theme</span>
-            </label>
+      <div class="accordion-card" data-section="appearance">
+        <div class="accordion-header">
+          <h3>Appearance</h3>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" id="theme-auto" name="theme-mode" value="auto" checked>
+              <label for="theme-auto">
+                <span class="option-title">Auto</span>
+                <span class="option-description">Follow system preference</span>
+              </label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="theme-dark" name="theme-mode" value="dark">
+              <label for="theme-dark">
+                <span class="option-title">Dark</span>
+                <span class="option-description">Always use dark theme</span>
+              </label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="theme-light" name="theme-mode" value="light">
+              <label for="theme-light">
+                <span class="option-title">Light</span>
+                <span class="option-description">Always use light theme</span>
+              </label>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- Analysis Features Section -->
-      <section class="settings-section">
-        <h3>Analysis Features</h3>
-        <p class="section-description">Choose what insights Perspective provides:</p>
-        <div class="toggle-group">
-          <div class="toggle-option">
-            <input type="checkbox" id="logical-fallacies" checked>
-            <label for="logical-fallacies">
-              <span class="toggle-title">Logical Fallacies Detection</span>
-              <span class="toggle-description">Identify flawed reasoning (ad hominem, strawman, false dilemmas, etc.)</span>
-            </label>
-          </div>
-          <div class="toggle-option">
-            <input type="checkbox" id="source-credibility" checked>
-            <label for="source-credibility">
-              <span class="toggle-title">Source Credibility Check</span>
-              <span class="toggle-description">Assess author expertise, citations, and publication reputation</span>
-            </label>
-          </div>
-          <div class="toggle-option">
-            <input type="checkbox" id="bias-detection" checked>
-            <label for="bias-detection">
-              <span class="toggle-title">Bias Detection</span>
-              <span class="toggle-description">Identify political/ideological bias and loaded language</span>
-            </label>
+      <div class="accordion-card" data-section="features">
+        <div class="accordion-header">
+          <h3>Analysis Features</h3>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <p class="section-description">Choose what insights Perspective provides:</p>
+          <div class="toggle-group">
+            <div class="toggle-option">
+              <input type="checkbox" id="logical-fallacies" checked>
+              <label for="logical-fallacies">
+                <span class="toggle-title">Logical Fallacies Detection</span>
+                <span class="toggle-description">Identify flawed reasoning (ad hominem, strawman, false dilemmas, etc.)</span>
+              </label>
+            </div>
+            <div class="toggle-option">
+              <input type="checkbox" id="source-credibility" checked>
+              <label for="source-credibility">
+                <span class="toggle-title">Source Credibility Check</span>
+                <span class="toggle-description">Assess author expertise, citations, and publication reputation</span>
+              </label>
+            </div>
+            <div class="toggle-option">
+              <input type="checkbox" id="bias-detection" checked>
+              <label for="bias-detection">
+                <span class="toggle-title">Bias Detection</span>
+                <span class="toggle-description">Identify political/ideological bias and loaded language</span>
+              </label>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
 
       <!-- Actions Section -->
-      <section class="settings-section">
-        <div class="button-group">
-          <button id="save-settings" class="btn-primary">Save</button>
-          <button id="reset-settings" class="btn-secondary">Reset</button>
+      <div class="accordion-card" data-section="actions">
+        <div class="accordion-header">
+          <h3>Actions</h3>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
         </div>
-      </section>
+        <div class="accordion-content">
+          <div class="button-group">
+            <button id="save-settings" class="btn-primary">Save</button>
+            <button id="reset-settings" class="btn-secondary">Reset</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Usage Info Section -->
-      <section class="settings-section usage-section">
-        <h3>Usage</h3>
-        <div id="settings-usage-info">
-          <p id="settings-usage-count">Loading...</p>
+      <div class="accordion-card" data-section="usage">
+        <div class="accordion-header">
+          <h3>Usage</h3>
+          <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
         </div>
-      </section>
+        <div class="accordion-content usage-section">
+          <div id="settings-usage-info">
+            <p id="settings-usage-count">Loading...</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

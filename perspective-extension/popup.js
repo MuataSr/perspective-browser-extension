@@ -102,6 +102,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // ==================== ACCORDION FUNCTIONALITY ====================
+
+  // Initialize accordion
+  function initializeAccordion() {
+    const accordionCards = document.querySelectorAll('.accordion-card');
+
+    accordionCards.forEach(card => {
+      const header = card.querySelector('.accordion-header');
+      const content = card.querySelector('.accordion-content');
+
+      header.addEventListener('click', () => {
+        const isExpanded = card.classList.contains('expanded');
+
+        // Close all other accordion cards (exclusive accordion)
+        accordionCards.forEach(otherCard => {
+          if (otherCard !== card) {
+            otherCard.classList.remove('expanded');
+          }
+        });
+
+        // Toggle current card
+        if (isExpanded) {
+          card.classList.remove('expanded');
+        } else {
+          card.classList.add('expanded');
+        }
+      });
+    });
+
+    // Open first accordion card by default
+    const firstCard = accordionCards[0];
+    if (firstCard) {
+      firstCard.classList.add('expanded');
+    }
+  }
+
+  // Initialize accordion when DOM is ready
+  initializeAccordion();
+
   // Logical Fallacy Terms Database
   const FALLACY_TERMS = {
     'ad hominem': 'Attacking the person making the argument rather than the argument itself.',
