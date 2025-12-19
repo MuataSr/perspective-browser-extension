@@ -105,3 +105,34 @@ h1::after {
   height: 2px;
   background: #2a2a2a;
 }
+
+/* Footer */
+.footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+}
+
+#settings-link {
+  color: #4a4a4a;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+#settings-link:hover {
+  color: #2a2a2a;
+  text-decoration: underline;
+}
+
+.divider {
+  margin: 0 8px;
+  color: #ccc;
+}
+
+#usage-info {
+  color: #666;
+}

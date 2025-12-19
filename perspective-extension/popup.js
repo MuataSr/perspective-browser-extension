@@ -1,7 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
   const placeholder = document.getElementById('visual-spectrum-placeholder');
+  const settingsLink = document.getElementById('settings-link');
+  const usageInfo = document.getElementById('usage-info');
+
   placeholder.innerHTML = 'Analyzing page<span class="ellipsis"></span>'; // Initial loading message
   placeholder.classList.add('loading');
+
+  // Load usage information
+  loadUsageInfo();
+
+  // Settings link click handler
+  settingsLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    chrome.runtime.openOptionsPage();
+  });
 
   // Function to format the counterarguments response
   function formatCounterarguments(data) {
@@ -71,10 +83,21 @@ document.addEventListener('DOMContentLoaded', () => {
                       }
                       if (response && response.data) {
                         // 4. Display the final result with formatting
-                        if (response.data.startsWith('Error:')) {
+                        if (response.data.startsWith('Error:') || response.data.startsWith('⚠️')) {
                           // Show error message with proper styling
                           placeholder.classList.remove('loading');
-                          placeholder.innerHTML = `<div class="error-message">${response.data}</div>`;
+
+                          // Check if it's a limit reached message
+                          if (response.data.includes('Daily Limit Reached')) {
+                            const settingsUrl = chrome.runtime.getURL('settings.html');
+                            const formattedMessage = response.data.replace(
+                              'Add your own API key for unlimited use:',
+                              `<a href="${settingsUrl}" target="_blank" style="color: #d32f2f; text-decoration: underline;">Add your own API key for unlimited use</a>`
+                            );
+                            placeholder.innerHTML = `<div class="error-message">${formattedMessage}</div>`;
+                          } else {
+                            placeholder.innerHTML = `<div class="error-message">${response.data}</div>`;
+                          }
                         } else {
                           // Format bulleted list
                           placeholder.classList.remove('loading');
@@ -99,4 +122,39 @@ document.addEventListener('DOMContentLoaded', () => {
       placeholder.innerText = 'Could not find an active tab.';
     }
   });
+
+  // Load usage information from chrome.storage
+  async function loadUsageInfo() {
+    try {
+      const result = await chrome.storage.sync.get({
+        usePersonalKey: false,
+        usage: {
+          date: new Date().toISOString().split('T')[0],
+          count: 0
+        }
+      });
+
+      const usePersonalKey = result.usePersonalKey;
+      const usage = result.usage;
+      const today = new Date().toISOString().split('T')[0];
+
+      // Reset count if it's a new day
+      if (usage.date !== today) {
+        const newUsage = { date: today, count: 0 };
+        await chrome.storage.sync.set({ usage: newUsage });
+        usage.count = 0;
+      }
+
+      if (usePersonalKey) {
+        usageInfo.textContent = 'Unlimited';
+        usageInfo.style.color = '#2a7a2a';
+      } else {
+        usageInfo.textContent = `${usage.count}/10 today`;
+        usageInfo.style.color = usage.count >= 8 ? '#d32f2f' : '#666';
+      }
+    } catch (error) {
+      console.error('Error loading usage info:', error);
+      usageInfo.textContent = '';
+    }
+  }
 });
