@@ -5,11 +5,143 @@ const ABACUS_API_CONFIG = {
   endpoint: 'https://routellm.abacus.ai/v1/chat/completions',
   sharedApiKey: 's2_114636cbfb9b4f4194185d452c6b19f8',
   model: 'deepseek-ai/DeepSeek-V3.2',
-  timeout: 60000, // 60 second timeout (increased from 30)
+  timeout: 60000, // 60 second timeout
   freeTierLimit: 10, // 10 analyses per day for free tier
-  maxInputChars: 1000, // Reduced from 2000 for faster processing
-  maxTokens: 400 // Reduced from 600 for faster response
+  maxInputChars: 1000, // Reduced for faster processing
+  maxTokens: 400, // Reduced for faster response
+  cacheExpirationDays: 7 // Cache expires after 7 days
 };
+
+// Cache configuration
+const CACHE_KEY_PREFIX = 'article_cache_';
+const CACHE_CLEANUP_THRESHOLD = 100; // Clean up if we have more than 100 cached articles
+
+/**
+ * Generate cache key from URL and settings
+ */
+function generateCacheKey(url, settings) {
+  const settingsSignature = JSON.stringify(settings.settings);
+  return CACHE_KEY_PREFIX + btoa(url + '|' + settingsSignature);
+}
+
+/**
+ * Check if cached result exists and is not expired
+ */
+async function getCachedResult(url, settings) {
+  const cacheKey = generateCacheKey(url, settings);
+
+  try {
+    const result = await chrome.storage.local.get(cacheKey);
+
+    if (result[cacheKey]) {
+      const cached = result[cacheKey];
+      const now = new Date();
+      const cachedDate = new Date(cached.timestamp);
+      const daysDiff = (now - cachedDate) / (1000 * 60 * 60 * 24);
+
+      if (daysDiff < ABACUS_API_CONFIG.cacheExpirationDays) {
+        console.log('Background: Using cached result for:', url);
+        return {
+          found: true,
+          data: cached.data,
+          fromCache: true
+        };
+      } else {
+        // Cache expired, remove it
+        console.log('Background: Cache expired, removing:', cacheKey);
+        await chrome.storage.local.remove(cacheKey);
+      }
+    }
+  } catch (error) {
+    console.error('Background: Error reading cache:', error);
+  }
+
+  return { found: false };
+}
+
+/**
+ * Store result in cache
+ */
+async function storeCachedResult(url, settings, data) {
+  const cacheKey = generateCacheKey(url, settings);
+  const cacheData = {
+    data: data,
+    timestamp: new Date().toISOString()
+  };
+
+  try {
+    await chrome.storage.local.set({ [cacheKey]: cacheData });
+    console.log('Background: Stored result in cache:', cacheKey);
+
+    // Clean up old entries if cache is getting large
+    await cleanupCache();
+  } catch (error) {
+    console.error('Background: Error storing cache:', error);
+  }
+}
+
+/**
+ * Clean up expired and old cache entries
+ */
+async function cleanupCache() {
+  try {
+    const allData = await chrome.storage.local.get(null);
+    const cacheEntries = Object.keys(allData).filter(key =>
+      key.startsWith(CACHE_KEY_PREFIX)
+    );
+
+    if (cacheEntries.length > CACHE_CLEANUP_THRESHOLD) {
+      console.log(`Background: Cleaning up cache (${cacheEntries.length} entries)`);
+
+      const now = new Date();
+      const entriesToKeep = [];
+      const expirationMs = ABACUS_API_CONFIG.cacheExpirationDays * 24 * 60 * 60 * 1000;
+
+      // Check each entry
+      for (const key of cacheEntries) {
+        const cached = allData[key];
+        const cachedDate = new Date(cached.timestamp);
+        const isExpired = (now - cachedDate) > expirationMs;
+
+        if (!isExpired) {
+          entriesToKeep.push({ key, timestamp: cachedDate });
+        }
+      }
+
+      // Remove expired entries
+      const keysToRemove = cacheEntries.filter(key => {
+        const cached = allData[key];
+        const cachedDate = new Date(cached.timestamp);
+        return (now - cachedDate) > expirationMs;
+      });
+
+      if (keysToRemove.length > 0) {
+        await chrome.storage.local.remove(keysToRemove);
+        console.log(`Background: Removed ${keysToRemove.length} expired cache entries`);
+      }
+
+      // If still too many, keep only the most recent ones
+      if (entriesToKeep.length > CACHE_CLEANUP_THRESHOLD) {
+        entriesToKeep.sort((a, b) => b.timestamp - a.timestamp);
+        const entriesToDelete = entriesToKeep.slice(CACHE_CLEANUP_THRESHOLD);
+
+        const keysToDelete = entriesToDelete.map(entry => entry.key);
+        await chrome.storage.local.remove(keysToDelete);
+        console.log(`Background: Removed ${keysToDelete.length} old cache entries (keeping most recent)`);
+      }
+    }
+  } catch (error) {
+    console.error('Background: Error during cache cleanup:', error);
+  }
+}
+
+/**
+ * Get current tab URL
+ */
+async function getCurrentTabUrl() {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tabs[0]?.url || '';
+}
 
 /**
  * Get settings from chrome.storage
@@ -113,15 +245,10 @@ Counterarguments:`;
  * Calls the Abacus AI API to get counterarguments.
  * @param {string} text The article text to analyze.
  * @param {Object} settings User settings from chrome.storage
+ * @param {string} url The current page URL
  * @returns {Promise<string>} A promise that resolves to the model's response.
  */
-async function getCounterargumentsFromAbacus(text, settings) {
-  // Check usage limit
-  const usageCheck = await checkUsageLimit(settings);
-  if (!usageCheck.allowed) {
-    return createLimitReachedMessage(usageCheck.usage);
-  }
-
+async function getCounterargumentsFromAbacus(text, settings, url) {
   const prompt = buildPrompt(text, settings);
 
   // Select API key (personal or shared)
@@ -193,12 +320,6 @@ async function getCounterargumentsFromAbacus(text, settings) {
 
     console.log("Background: Successfully extracted response:", result);
 
-    // Increment usage counter (only for shared key)
-    if (!settings.usePersonalKey) {
-      await incrementUsage();
-      console.log("Background: Incremented usage counter");
-    }
-
     console.log("Background: Returning counterarguments to popup");
     return result;
 
@@ -240,11 +361,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('Background: Received request from popup for analysis.');
     console.log('Background: Text length:', request.text?.length || 0, 'characters');
 
-    // Get settings and check usage
+    // Get settings, URL, and check cache
     (async () => {
       try {
-        const settings = await getSettings();
+        const [settings, currentUrl] = await Promise.all([
+          getSettings(),
+          getCurrentTabUrl()
+        ]);
+
         console.log('Background: Loaded settings:', settings);
+        console.log('Background: Current URL:', currentUrl);
+
+        // Check cache first
+        const cachedResult = await getCachedResult(currentUrl, settings);
+
+        if (cachedResult.found) {
+          console.log('Background: Returning cached result');
+          sendResponse({ data: cachedResult.data, fromCache: true });
+          return;
+        }
+
+        console.log('Background: No cached result, checking usage limit...');
+
+        // Check usage limit for non-cached requests
+        const usageCheck = await checkUsageLimit(settings);
+        if (!usageCheck.allowed) {
+          return sendResponse({ data: createLimitReachedMessage(usageCheck.usage) });
+        }
 
         // Add timeout wrapper to prevent hanging
         const timeoutPromise = new Promise((_, reject) => {
@@ -254,12 +397,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }, 45000);
         });
 
-        const analysisPromise = getCounterargumentsFromAbacus(request.text, settings);
+        const analysisPromise = getCounterargumentsFromAbacus(request.text, settings, currentUrl);
 
         Promise.race([analysisPromise, timeoutPromise])
-          .then(counterarguments => {
+          .then(async (counterarguments) => {
             console.log('Background: Promise resolved, sending response back to popup');
-            sendResponse({ data: counterarguments });
+
+            // Increment usage counter (only for shared key and only for new API calls)
+            if (!settings.usePersonalKey) {
+              await incrementUsage();
+              console.log("Background: Incremented usage counter");
+            }
+
+            // Store result in cache
+            await storeCachedResult(currentUrl, settings, counterarguments);
+
+            sendResponse({ data: counterarguments, fromCache: false });
           })
           .catch(error => {
             console.error('Background: Promise race error:', error);

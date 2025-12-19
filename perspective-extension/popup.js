@@ -12,16 +12,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Settings link click handler
   settingsLink.addEventListener('click', (e) => {
     e.preventDefault();
-    chrome.runtime.openOptionsPage();
+    // Open settings as popup window
+    const settingsUrl = chrome.runtime.getURL('settings-popup.html');
+    window.open(settingsUrl, 'Perspective Settings', 'width=450,height=700,scrollbars=yes,resizable=yes');
   });
 
   // Function to format the counterarguments response
-  function formatCounterarguments(data) {
+  function formatCounterarguments(data, isCached = false) {
+    // Check if this is a cached result
+    if (data.startsWith('[Cached]')) {
+      data = data.substring(9).trim();
+    }
+
     // Split the response into lines and filter out empty lines
     const lines = data.split('\n').filter(line => line.trim().length > 0);
 
     // Create HTML for the list
     let html = '<ul class="counterarguments-list">';
+
+    // Add cached indicator if needed
+    if (isCached) {
+      html += '<span class="cached-indicator">Cached Result</span>';
+    }
 
     lines.forEach(line => {
       // Clean up the line - remove bullet characters at the start
@@ -89,10 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                           // Check if it's a limit reached message
                           if (response.data.includes('Daily Limit Reached')) {
-                            const settingsUrl = chrome.runtime.getURL('settings.html');
+                            const settingsUrl = chrome.runtime.getURL('settings-popup.html');
                             const formattedMessage = response.data.replace(
                               'Add your own API key for unlimited use:',
-                              `<a href="${settingsUrl}" target="_blank" style="color: #d32f2f; text-decoration: underline;">Add your own API key for unlimited use</a>`
+                              `<a href="#" onclick="window.open('${settingsUrl}', 'Perspective Settings', 'width=450,height=700,scrollbars=yes,resizable=yes'); return false;" style="color: #d32f2f; text-decoration: underline;">Add your own API key for unlimited use</a>`
                             );
                             placeholder.innerHTML = `<div class="error-message">${formattedMessage}</div>`;
                           } else {
@@ -101,7 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                           // Format bulleted list
                           placeholder.classList.remove('loading');
-                          formatCounterarguments(response.data);
+
+                          // Show cached indicator if result is from cache
+                          if (response.fromCache) {
+                            formatCounterarguments(response.data, true);
+                          } else {
+                            formatCounterarguments(response.data, false);
+                          }
                         }
                       } else {
                         placeholder.innerText = 'No response from analysis service.';
