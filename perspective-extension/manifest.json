@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Perspective",
+  "version": "0.1.0",
+  "description": "A critical thinking coach to help you analyze web pages.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "https://routellm.abacus.ai/v1/chat/completions"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/Readability.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

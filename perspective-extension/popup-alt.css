@@ -1,0 +1,99 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 420px;
+  max-height: 600px;
+  padding: 0;
+  margin: 0;
+  background: #f5f5f5;
+}
+
+.container {
+  background: #ffffff;
+  padding: 28px;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111111;
+  margin: 0 0 24px 0;
+  text-align: left;
+  letter-spacing: -0.03em;
+}
+
+#visual-spectrum-placeholder {
+  color: #333333;
+  line-height: 1.65;
+}
+
+.counterarguments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: item;
+}
+
+.counterarguments-list li {
+  position: relative;
+  padding: 12px 0 12px 40px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  color: #333333;
+  line-height: 1.65;
+  border-bottom: 1px solid #f0f0f0;
+  transition: opacity 0.2s ease;
+}
+
+.counterarguments-list li:last-child {
+  border-bottom: none;
+}
+
+.counterarguments-list li:hover {
+  opacity: 0.85;
+}
+
+.counterarguments-list li::before {
+  counter-increment: item;
+  content: counter(item);
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 28px;
+  height: 28px;
+  background: #111111;
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Loading state */
+.content-area.loading {
+  font-style: italic;
+  color: #999;
+  font-size: 14px;
+}
+
+/* Error messages */
+.error-message {
+  color: #c62828;
+  background: #ffebee;
+  padding: 14px;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  border-left: 3px solid #c62828;
+}
+
+/* Subtle top border */
+.container::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: #111111;
+  margin: -28px -28px 24px -28px;
+}
