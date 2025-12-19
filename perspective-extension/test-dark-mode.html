@@ -3,48 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perspective</title>
+  <title>Dark Mode Test - Popup</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
     <h1>Perspective</h1>
-    <div id="visual-spectrum-placeholder" class="content-area">
-      <p>Analysis will appear here.</p>
+    <div id="visual-spectrum-placeholder">
+      <p>Test counterargument content</p>
+      <ul class="counterarguments-list">
+        <li>This is a test argument</li>
+        <li>This is another test argument</li>
+        <li>Third test argument</li>
+      </ul>
     </div>
     <div class="footer">
+      <span id="usage-info">5/10 today</span>
+      <span class="divider">•</span>
       <a href="#" id="settings-link">Settings</a>
-      <span class="divider">|</span>
-      <span id="usage-info">Loading...</span>
     </div>
   </div>
 
-  <!-- Settings Panel Overlay -->
-  <div id="settings-overlay" class="settings-overlay"></div>
+  <script>
+    // Test dark mode toggle
+    document.addEventListener('DOMContentLoaded', () => {
+      const body = document.body;
 
-  <!-- Tooltip Container -->
-  <div id="tooltip-container" class="tooltip-container" role="tooltip" aria-hidden="true">
-    <div class="tooltip-content">
-      <div class="tooltip-title"></div>
-      <p class="tooltip-text"></p>
-    </div>
-  </div>
+      // Add toggle button
+      const toggleBtn = document.createElement('button');
+      toggleBtn.textContent = 'Toggle Dark Mode';
+      toggleBtn.style.cssText = 'position: fixed; top: 10px; right: 10px; padding: 10px; z-index: 1000;';
+      toggleBtn.onclick = () => {
+        body.classList.toggle('dark-mode');
+      };
+      document.body.appendChild(toggleBtn);
 
-  <!-- Settings Panel -->
-  <div id="settings-panel" class="settings-panel" aria-hidden="true">
-    <div class="settings-panel-header">
-      <h2>Settings</h2>
-      <button id="close-settings-btn" class="close-button" aria-label="Close settings">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
-        </svg>
-      </button>
-    </div>
+      console.log('Dark mode test page loaded');
+      console.log('Current theme: ' + (body.classList.contains('dark-mode') ? 'dark' : 'light'));
+    });
+  </script>
+</body>
+</html>
 
-    <div class="settings-panel-content">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Mode Test - Settings Popup</title>
+  <link rel="stylesheet" href="settings-popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Settings</h1>
+    <div class="content">
+
       <!-- API Configuration Section -->
       <section class="settings-section">
-        <h3>API Configuration</h3>
+        <h2>API Configuration</h2>
+
         <div class="radio-group">
           <div class="radio-option">
             <input type="radio" id="use-shared" name="api-mode" value="shared" checked>
@@ -54,6 +71,7 @@
               <span class="option-note">Uses shared API key</span>
             </label>
           </div>
+
           <div class="radio-option">
             <input type="radio" id="use-personal" name="api-mode" value="personal">
             <label for="use-personal">
@@ -63,6 +81,7 @@
             </label>
           </div>
         </div>
+
         <div class="personal-key-section" id="personal-key-section" style="display: none;">
           <label for="user-api-key">Abacus AI API Key</label>
           <div class="key-input-container">
@@ -75,27 +94,33 @@
 
       <!-- Appearance Section -->
       <section class="settings-section">
-        <h3>Appearance</h3>
+        <h2>Appearance</h2>
+
         <div class="radio-group">
           <div class="radio-option">
             <input type="radio" id="theme-auto" name="theme-mode" value="auto" checked>
             <label for="theme-auto">
               <span class="option-title">Auto</span>
               <span class="option-description">Follow system preference</span>
+              <span class="option-note">Automatically switches based on your OS</span>
             </label>
           </div>
+
           <div class="radio-option">
             <input type="radio" id="theme-dark" name="theme-mode" value="dark">
             <label for="theme-dark">
               <span class="option-title">Dark</span>
               <span class="option-description">Always use dark theme</span>
+              <span class="option-note">Easier on the eyes in low light</span>
             </label>
           </div>
+
           <div class="radio-option">
             <input type="radio" id="theme-light" name="theme-mode" value="light">
             <label for="theme-light">
               <span class="option-title">Light</span>
               <span class="option-description">Always use light theme</span>
+              <span class="option-note">Clean and bright</span>
             </label>
           </div>
         </div>
@@ -103,8 +128,9 @@
 
       <!-- Analysis Features Section -->
       <section class="settings-section">
-        <h3>Analysis Features</h3>
+        <h2>Analysis Features</h2>
         <p class="section-description">Choose what insights Perspective provides:</p>
+
         <div class="toggle-group">
           <div class="toggle-option">
             <input type="checkbox" id="logical-fallacies" checked>
@@ -113,6 +139,7 @@
               <span class="toggle-description">Identify flawed reasoning (ad hominem, strawman, false dilemmas, etc.)</span>
             </label>
           </div>
+
           <div class="toggle-option">
             <input type="checkbox" id="source-credibility" checked>
             <label for="source-credibility">
@@ -120,6 +147,7 @@
               <span class="toggle-description">Assess author expertise, citations, and publication reputation</span>
             </label>
           </div>
+
           <div class="toggle-option">
             <input type="checkbox" id="bias-detection" checked>
             <label for="bias-detection">
@@ -140,14 +168,32 @@
 
       <!-- Usage Info Section -->
       <section class="settings-section usage-section">
-        <h3>Usage</h3>
-        <div id="settings-usage-info">
-          <p id="settings-usage-count">Loading...</p>
+        <h2>Usage</h2>
+        <div id="usage-info">
+          <p id="usage-count">Loading...</p>
         </div>
       </section>
+
     </div>
   </div>
 
-  <script src="popup.js"></script>
+  <script>
+    // Test dark mode toggle
+    document.addEventListener('DOMContentLoaded', () => {
+      const body = document.body;
+
+      // Add toggle button
+      const toggleBtn = document.createElement('button');
+      toggleBtn.textContent = 'Toggle Dark Mode';
+      toggleBtn.style.cssText = 'position: fixed; top: 10px; right: 10px; padding: 10px; z-index: 1000;';
+      toggleBtn.onclick = () => {
+        body.classList.toggle('dark-mode');
+      };
+      document.body.appendChild(toggleBtn);
+
+      console.log('Settings dark mode test page loaded');
+      console.log('Current theme: ' + (body.classList.contains('dark-mode') ? 'dark' : 'light'));
+    });
+  </script>
 </body>
 </html>

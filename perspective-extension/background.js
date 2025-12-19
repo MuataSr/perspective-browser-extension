@@ -211,32 +211,29 @@ async function incrementUsage() {
  * Build dynamic prompt based on user settings
  */
 function buildPrompt(text, settings) {
-  let prompt = `You are a critical thinking coach named "Perspective". Your tone is helpful, neutral, and educational. Below is an article. Please provide a concise summary of the main counterarguments or alternative perspectives to the arguments presented in this article. Present them as a bulleted list. Do not add any preamble or conclusion, only the bulleted list.
+  let prompt = `You are a critical thinking coach named "Perspective". Your tone is helpful, neutral, and educational.
+
+Below is an article. Please analyze it and provide your response in the following format with EXACT section headings:
+
+## Counter Arguments
+- Main counterarguments or alternative perspectives (bulleted list)
+
+## Logical Fallacies & Analysis
+- Identify any logical fallacies present (e.g., ad hominem, strawman, false dilemma, appeal to authority)
+
+## Loaded Language
+- Note any loaded language or emotionally charged wording
+
+## Source Credibility & Bias
+- Assess the credibility of sources cited and the author's expertise
+- Note any potential bias in the presentation
 
 Article:
 ---
 ${text.substring(0, ABACUS_API_CONFIG.maxInputChars)}
 ---
-Counterarguments:`;
 
-  // Add additional analysis based on enabled features
-  const additions = [];
-
-  if (settings.settings.logicalFallacies) {
-    additions.push('Also identify any logical fallacies present in the arguments (e.g., ad hominem, strawman, false dilemma, appeal to authority).');
-  }
-
-  if (settings.settings.sourceCredibility) {
-    additions.push('Also assess the credibility of sources cited and the author\'s expertise on this topic.');
-  }
-
-  if (settings.settings.biasDetection) {
-    additions.push('Also note any potential bias in the presentation of information or loaded language.');
-  }
-
-  if (additions.length > 0) {
-    prompt += '\n\nAdditional Analysis:\n' + additions.join('\n');
-  }
+Response:`;
 
   return prompt;
 }

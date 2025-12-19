@@ -4,6 +4,7 @@
 const DEFAULT_SETTINGS = {
   usePersonalKey: false,
   userApiKey: '',
+  darkMode: 'auto', // 'auto', 'dark', 'light'
   settings: {
     logicalFallacies: true,
     sourceCredibility: true,
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS = {
 // DOM elements
 let useSharedRadio, usePersonalRadio, personalKeySection;
 let userApiKeyInput, testKeyBtn, keyStatus;
+let themeAutoRadio, themeDarkRadio, themeLightRadio;
 let logicalFallaciesCheckbox, sourceCredibilityCheckbox, biasDetectionCheckbox;
 let saveBtn, resetBtn, usageInfo;
 
@@ -33,6 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load usage info
   await loadUsageInfo();
+
+  // Apply dark mode based on settings
+  await applyDarkMode();
 });
 
 function initializeElements() {
@@ -43,6 +48,10 @@ function initializeElements() {
   userApiKeyInput = document.getElementById('user-api-key');
   testKeyBtn = document.getElementById('test-key-btn');
   keyStatus = document.getElementById('key-status');
+
+  themeAutoRadio = document.getElementById('theme-auto');
+  themeDarkRadio = document.getElementById('theme-dark');
+  themeLightRadio = document.getElementById('theme-light');
 
   logicalFallaciesCheckbox = document.getElementById('logical-fallacies');
   sourceCredibilityCheckbox = document.getElementById('source-credibility');
@@ -86,6 +95,16 @@ async function loadSettings() {
     userApiKeyInput.value = result.userApiKey;
   }
 
+  // Dark mode
+  const darkMode = result.darkMode || DEFAULT_SETTINGS.darkMode;
+  if (darkMode === 'auto') {
+    themeAutoRadio.checked = true;
+  } else if (darkMode === 'dark') {
+    themeDarkRadio.checked = true;
+  } else {
+    themeLightRadio.checked = true;
+  }
+
   // Analysis features
   const settings = result.settings || DEFAULT_SETTINGS.settings;
   logicalFallaciesCheckbox.checked = settings.logicalFallacies;
@@ -114,7 +133,15 @@ async function testApiKey() {
   testKeyBtn.disabled = true;
 
   try {
-    const response = await fetch('https://routellm.abacus.ai/v1/chat/completions', {
+    // Create timeout promise (10 seconds)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('timeout'));
+      }, 10000);
+    });
+
+    // Create fetch promise
+    const fetchPromise = fetch('https://routellm.abacus.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -127,6 +154,9 @@ async function testApiKey() {
       })
     });
 
+    // Race fetch against timeout
+    const response = await Promise.race([fetchPromise, timeoutPromise]);
+
     if (response.ok) {
       showKeyStatus('✓ Connection successful!', 'success');
     } else {
@@ -134,7 +164,11 @@ async function testApiKey() {
       showKeyStatus(`✗ Connection failed: ${response.status}`, 'error');
     }
   } catch (error) {
-    showKeyStatus(`✗ Error: ${error.message}`, 'error');
+    if (error.message === 'timeout') {
+      showKeyStatus('✗ Request timed out - please try again', 'error');
+    } else {
+      showKeyStatus(`✗ Error: ${error.message}`, 'error');
+    }
   } finally {
     testKeyBtn.disabled = false;
   }
@@ -150,6 +184,14 @@ async function saveSettings() {
   const usePersonalKey = usePersonalRadio.checked;
   const userApiKey = userApiKeyInput.value.trim();
 
+  // Get dark mode selection
+  let darkMode = 'auto';
+  if (themeDarkRadio.checked) {
+    darkMode = 'dark';
+  } else if (themeLightRadio.checked) {
+    darkMode = 'light';
+  }
+
   // Validate personal key if selected
   if (usePersonalKey && !userApiKey) {
     showKeyStatus('Please enter an API key', 'error');
@@ -159,6 +201,7 @@ async function saveSettings() {
   const settings = {
     usePersonalKey: usePersonalKey,
     userApiKey: usePersonalKey ? userApiKey : '',
+    darkMode: darkMode,
     settings: {
       logicalFallacies: logicalFallaciesCheckbox.checked,
       sourceCredibility: sourceCredibilityCheckbox.checked,
@@ -186,8 +229,10 @@ async function resetToDefaults() {
     return;
   }
 
+  const defaultSettings = { ...DEFAULT_SETTINGS };
+
   await chrome.storage.sync.clear();
-  await chrome.storage.sync.set(DEFAULT_SETTINGS);
+  await chrome.storage.sync.set(defaultSettings);
 
   // Reload the page
   window.location.reload();
@@ -222,4 +267,43 @@ async function loadUsageInfo() {
   }
 
   usageInfo.innerHTML = html;
+}
+
+// Apply dark mode based on settings
+async function applyDarkMode() {
+  try {
+    const result = await chrome.storage.sync.get({
+      darkMode: 'auto'
+    });
+
+    const darkMode = result.darkMode;
+    const body = document.body;
+
+    if (darkMode === 'dark') {
+      body.classList.add('dark-mode');
+    } else if (darkMode === 'light') {
+      body.classList.remove('dark-mode');
+    } else {
+      // Auto mode - detect system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        body.classList.add('dark-mode');
+      } else {
+        body.classList.remove('dark-mode');
+      }
+    }
+
+    // Listen for system preference changes if in auto mode
+    if (darkMode === 'auto') {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (e.matches) {
+          body.classList.add('dark-mode');
+        } else {
+          body.classList.remove('dark-mode');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error applying dark mode:', error);
+  }
 }

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tooltip Debug Test</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --text-primary: #1a1a1a;
+      --accent-color: #4a9eff;
+      --border-color: #f0f0f0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      padding: 40px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    .fallacy-term {
+      font-weight: 600;
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 2px;
+      cursor: help;
+      position: relative;
+      transition: all 0.2s ease;
+      color: var(--accent-color);
+    }
+
+    .fallacy-term:hover,
+    .fallacy-term:focus {
+      opacity: 0.8;
+      outline: none;
+    }
+
+    .tooltip-container {
+      position: fixed;
+      z-index: 10000;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .tooltip-container.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .tooltip-content {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      max-width: 280px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    .tooltip-content::after {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+    }
+
+    .tooltip-content.position-top::after {
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 8px 8px 0 8px;
+      border-color: var(--bg-primary) transparent transparent transparent;
+    }
+
+    .tooltip-content.position-bottom::after {
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 0 8px 8px 8px;
+      border-color: transparent transparent var(--bg-primary) transparent;
+    }
+
+    .tooltip-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+      margin: 0 0 6px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tooltip-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    #debug-log {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+
+    .log-entry {
+      margin: 5px 0;
+      padding: 3px;
+    }
+
+    .log-success { color: green; }
+    .log-error { color: red; }
+    .log-info { color: blue; }
+  </style>
+</head>
+<body>
+  <h1>Tooltip Debug Test</h1>
+
+  <div class="test-section">
+    <h2>Test Case 1: Fallacy Terms</h2>
+    <p>This is a test with fallacy terms like <span class="fallacy-term" tabindex="0" role="button" aria-label="ad hominem">ad hominem</span> and <span class="fallacy-term" tabindex="0" role="button" aria-label="straw man">straw man</span>.</p>
+    <p>Another term: <span class="fallacy-term" tabindex="0" role="button" aria-label="false dilemma">false dilemma</span></p>
+  </div>
+
+  <div class="test-section">
+    <h2>Debug Log</h2>
+    <div id="debug-log"></div>
+  </div>
+
+  <!-- Tooltip Container -->
+  <div id="tooltip-container" class="tooltip-container" role="tooltip" aria-hidden="true">
+    <div class="tooltip-content">
+      <div class="tooltip-title"></div>
+      <p class="tooltip-text"></p>
+    </div>
+  </div>
+
+  <script>
+    // Fallacy terms database
+    const FALLACY_TERMS = {
+      'ad hominem': 'Attacking the person making the argument rather than the argument itself.',
+      'straw man': 'Misrepresenting someone\'s argument to make it easier to attack or refute.',
+      'false dilemma': 'Presenting only two choices when more options exist.',
+      'slippery slope': 'Arguing that one event will inevitably lead to a chain of negative events.',
+      'circular reasoning': 'Using the conclusion as evidence for the premise of the argument.',
+    };
+
+    // Debug logging
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('debug-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.appendChild(entry);
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    // Show tooltip with fallacy definition
+    function showTooltip(element, term, definition) {
+      log(`showTooltip called with: "${term}"`, 'info');
+
+      const tooltipContainer = document.getElementById('tooltip-container');
+      const tooltipContent = tooltipContainer.querySelector('.tooltip-content');
+      const tooltipTitle = tooltipContent.querySelector('.tooltip-title');
+      const tooltipText = tooltipContent.querySelector('.tooltip-text');
+
+      if (!tooltipContainer) {
+        log('ERROR: tooltipContainer not found!', 'error');
+        return;
+      }
+      if (!tooltipContent) {
+        log('ERROR: tooltipContent not found!', 'error');
+        return;
+      }
+      if (!tooltipTitle) {
+        log('ERROR: tooltipTitle not found!', 'error');
+        return;
+      }
+      if (!tooltipText) {
+        log('ERROR: tooltipText not found!', 'error');
+        return;
+      }
+
+      log('All tooltip elements found', 'success');
+
+      // Set tooltip content
+      tooltipTitle.textContent = term;
+      tooltipText.textContent = definition;
+      log(`Set content: "${term}" - "${definition}"`, 'success');
+
+      // Position tooltip
+      const rect = element.getBoundingClientRect();
+      const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      log(`Element rect: ${JSON.stringify(rect)}`, 'info');
+
+      // Add visible class to show tooltip
+      tooltipContainer.classList.add('visible');
+      tooltipContent.classList.remove('position-top', 'position-bottom', 'position-left', 'position-right');
+      log('Added "visible" class', 'success');
+
+      // Get tooltip dimensions after it's visible
+      const tooltipRect = tooltipContent.getBoundingClientRect();
+      log(`Tooltip rect: ${JSON.stringify(tooltipRect)}`, 'info');
+
+      let top = rect.bottom + scrollY + 10;
+      let left = rect.left + scrollX + (rect.width / 2) - (tooltipRect.width / 2);
+
+      // Check if tooltip goes off screen and adjust
+      if (left < scrollX + 10) {
+        left = scrollX + 10;
+      } else if (left + tooltipRect.width > scrollX + viewportWidth - 10) {
+        left = scrollX + viewportWidth - tooltipRect.width - 10;
+      }
+
+      // Check vertical positioning
+      if (rect.bottom + tooltipRect.height + 20 > viewportHeight) {
+        // Show above
+        top = rect.top + scrollY - tooltipRect.height - 10;
+        tooltipContent.classList.add('position-top');
+        log('Positioning above element', 'info');
+      } else {
+        // Show below
+        tooltipContent.classList.add('position-bottom');
+        log('Positioning below element', 'info');
+      }
+
+      tooltipContainer.style.top = `${top}px`;
+      tooltipContainer.style.left = `${left}px`;
+      log(`Set position: top=${top}px, left=${left}px`, 'success');
+
+      // Check computed styles
+      const computedStyles = window.getComputedStyle(tooltipContainer);
+      log(`Computed opacity: ${computedStyles.opacity}, visibility: ${computedStyles.visibility}`, 'info');
+    }
+
+    // Hide tooltip
+    function hideTooltip() {
+      log('hideTooltip called', 'info');
+      const tooltipContainer = document.getElementById('tooltip-container');
+      if (!tooltipContainer) {
+        log('ERROR: tooltipContainer not found in hideTooltip!', 'error');
+        return;
+      }
+      tooltipContainer.classList.remove('visible');
+      tooltipContainer.style.visibility = 'hidden';
+      log('Tooltip hidden', 'success');
+    }
+
+    // Attach tooltip events to fallacy terms
+    function attachTooltipEvents() {
+      log('attachTooltipEvents called', 'info');
+      const fallacyTerms = document.querySelectorAll('.fallacy-term');
+      log(`Found ${fallacyTerms.length} fallacy terms`, 'info');
+
+      if (fallacyTerms.length === 0) {
+        log('WARNING: No fallacy terms found!', 'error');
+        return;
+      }
+
+      fallacyTerms.forEach((term, index) => {
+        log(`Attaching events to term ${index + 1}: "${term.textContent}"`, 'info');
+
+        // Mouse events
+        term.addEventListener('mouseenter', (e) => {
+          log(`mouseenter event on: "${e.target.textContent}"`, 'info');
+          const termText = e.target.textContent.toLowerCase();
+          log(`Looking up term: "${termText}"`, 'info');
+          const definition = FALLACY_TERMS[termText];
+          if (definition) {
+            log(`Found definition: "${definition}"`, 'success');
+            showTooltip(e.target, e.target.textContent, definition);
+          } else {
+            log(`No definition found for "${termText}"`, 'error');
+          }
+        });
+
+        term.addEventListener('mouseleave', () => {
+          log(`mouseleave event on: "${term.textContent}"`, 'info');
+          hideTooltip();
+        });
+
+        // Keyboard events
+        term.addEventListener('focus', (e) => {
+          log(`focus event on: "${e.target.textContent}"`, 'info');
+          const termText = e.target.textContent.toLowerCase();
+          const definition = FALLACY_TERMS[termText];
+          if (definition) {
+            showTooltip(e.target, e.target.textContent, definition);
+          }
+        });
+
+        term.addEventListener('blur', () => {
+          log(`blur event on: "${term.textContent}"`, 'info');
+          hideTooltip();
+        });
+
+        term.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+            log(`keydown event (${e.key}) on: "${term.textContent}"`, 'info');
+            hideTooltip();
+          }
+        });
+
+        // Click events
+        term.addEventListener('click', (e) => {
+          log(`click event on: "${e.target.textContent}"`, 'info');
+          const termText = e.target.textContent.toLowerCase();
+          const definition = FALLACY_TERMS[termText];
+          if (definition) {
+            const tooltipContainer = document.getElementById('tooltip-container');
+            if (tooltipContainer.classList.contains('visible')) {
+              hideTooltip();
+            } else {
+              showTooltip(e.target, e.target.textContent, definition);
+            }
+          }
+        });
+      });
+
+      log('All events attached successfully', 'success');
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      log('DOM Content Loaded', 'success');
+      attachTooltipEvents();
+      log('Initial attachment complete', 'success');
+    });
+
+    // Also try after a short delay (in case DOMContentLoaded already fired)
+    setTimeout(() => {
+      log('Running delayed attachment check', 'info');
+      attachTooltipEvents();
+    }, 100);
+  </script>
+</body>
+</html>

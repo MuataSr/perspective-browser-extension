@@ -1,21 +1,61 @@
+/* ==================== CSS CUSTOM PROPERTIES ==================== */
+:root {
+  /* Background colors */
+  --bg-primary: #fafafa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8f8f8;
+
+  /* Text colors */
+  --text-primary: #1a1a1a;
+  --text-secondary: #333333;
+  --text-tertiary: #666666;
+
+  /* Accent colors */
+  --accent-color: #2a2a2a;
+
+  /* Input colors */
+  --input-bg: #f8f8f8;
+  --input-bg-hover: #f0f0f0;
+  --input-bg-active: #f0f0f0;
+  --input-border: #e0e0e0;
+  --input-border-hover: #d0d0d0;
+
+  /* Border colors */
+  --border-color: #f0f0f0;
+
+  /* Button colors */
+  --btn-primary-bg: #1a1a1a;
+  --btn-primary-bg-hover: #333333;
+  --btn-primary-bg-active: #000000;
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-bg: #f5f5f5;
+  --btn-secondary-bg-hover: #e8e8e8;
+  --btn-secondary-bg-active: #d0d0d0;
+  --btn-secondary-text: #1a1a1a;
+  --btn-secondary-border: #d0d0d0;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   width: 420px;
   max-height: 700px;
   padding: 0;
   margin: 0;
-  background: #fafafa;
+  background: transparent;
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
-  background: #ffffff;
-  padding: 24px;
+  background: transparent;
+  padding: 16px;
 }
 
 h1 {
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 20px 0;
   letter-spacing: -0.01em;
   position: relative;
@@ -29,34 +69,35 @@ h1::after {
   left: 0;
   width: 32px;
   height: 2px;
-  background: #2a2a2a;
+  background: var(--accent-color);
 }
 
 h2 {
   font-size: 16px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin: 0 0 16px 0;
 }
 
 .content {
-  max-height: 600px;
+  max-height: 650px;
   overflow-y: auto;
 }
 
 .settings-section {
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .settings-section:last-of-type {
   border-bottom: none;
+  margin-bottom: 0;
 }
 
 .section-description {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0 0 16px 0;
 }
 
@@ -80,48 +121,48 @@ h2 {
 .radio-option label {
   display: block;
   padding: 16px;
-  background: #f8f8f8;
-  border: 1px solid #e0e0e0;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .radio-option label:hover {
-  background: #f0f0f0;
-  border-color: #d0d0d0;
+  background: var(--input-bg-hover);
+  border-color: var(--input-border-hover);
 }
 
 .radio-option input[type="radio"]:checked + label {
-  background: #f0f0f0;
-  border-color: #1a1a1a;
+  background: var(--input-bg-active);
+  border-color: var(--accent-color);
 }
 
 .option-title {
   display: block;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .option-description {
   display: block;
   font-size: 14px;
-  color: #333;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .option-note {
   display: block;
   font-size: 12px;
-  color: #666;
+  color: var(--text-tertiary);
 }
 
 /* Personal Key Section */
 .personal-key-section {
   margin-top: 20px;
   padding: 16px;
-  background: #f8f8f8;
+  background: var(--input-bg);
   border-radius: 8px;
 }
 
@@ -129,7 +170,7 @@ h2 {
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -142,15 +183,17 @@ h2 {
 #user-api-key {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #d0d0d0;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   font-size: 14px;
   font-family: monospace;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 #user-api-key:focus {
   outline: none;
-  border-color: #1a1a1a;
+  border-color: var(--accent-color);
 }
 
 .status-message {
@@ -194,26 +237,26 @@ h2 {
   align-items: center;
   cursor: pointer;
   padding: 16px;
-  background: #fafafa;
-  border: 1px solid #e8e8e8;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   transition: all 0.2s ease;
 }
 
 .toggle-option label:hover {
-  background: #f5f5f5;
+  background: var(--input-bg-hover);
 }
 
 .toggle-option input[type="checkbox"]:checked + label {
-  background: #f0f0f0;
-  border-color: #1a1a1a;
+  background: var(--input-bg-active);
+  border-color: var(--accent-color);
 }
 
 .toggle-option input[type="checkbox"] + label::before {
   content: '';
   width: 20px;
   height: 20px;
-  border: 2px solid #999;
+  border: 2px solid var(--input-border);
   border-radius: 4px;
   margin-right: 12px;
   flex-shrink: 0;
@@ -221,8 +264,8 @@ h2 {
 }
 
 .toggle-option input[type="checkbox"]:checked + label::before {
-  background: #1a1a1a;
-  border-color: #1a1a1a;
+  background: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .toggle-option input[type="checkbox"]:checked + label::after {
@@ -237,14 +280,14 @@ h2 {
 .toggle-title {
   display: block;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .toggle-description {
   display: block;
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -265,41 +308,79 @@ h2 {
 }
 
 .btn-primary {
-  background: #1a1a1a;
-  color: #ffffff;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
 }
 
 .btn-primary:hover {
-  background: #333333;
+  background: var(--btn-primary-bg-hover);
 }
 
 .btn-primary:active {
-  background: #000000;
+  background: var(--btn-primary-bg-active);
 }
 
 .btn-secondary {
-  background: #f5f5f5;
-  color: #1a1a1a;
-  border: 1px solid #d0d0d0;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .btn-secondary:hover {
-  background: #e8e8e8;
+  background: var(--btn-secondary-bg-hover);
 }
 
 .btn-secondary:active {
-  background: #d0d0d0;
+  background: var(--btn-secondary-bg-active);
 }
 
 /* Usage Section */
 .usage-section {
-  background: #fafafa;
-  padding: 16px;
-  border-radius: 8px;
+  background: var(--bg-tertiary);
+  padding: 12px;
+  border-radius: 6px;
 }
 
 #usage-count {
   font-size: 14px;
-  color: #333;
+  color: var(--text-secondary);
   margin: 0;
+}
+
+/* ==================== DARK MODE ==================== */
+body.dark-mode {
+  /* Background colors */
+  --bg-primary: transparent;
+  --bg-secondary: transparent;
+  --bg-tertiary: #2a2a2a;
+
+  /* Text colors */
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #808080;
+
+  /* Accent colors */
+  --accent-color: #4a9eff;
+
+  /* Input colors */
+  --input-bg: #2a2a2a;
+  --input-bg-hover: #333333;
+  --input-bg-active: #1e1e1e;
+  --input-border: #404040;
+  --input-border-hover: #505050;
+
+  /* Border colors */
+  --border-color: #404040;
+
+  /* Button colors */
+  --btn-primary-bg: #4a9eff;
+  --btn-primary-bg-hover: #3a8eef;
+  --btn-primary-bg-active: #2a7edf;
+  --btn-primary-text: #ffffff;
+
+  --btn-secondary-bg: #2a2a2a;
+  --btn-secondary-bg-hover: #333333;
+  --btn-secondary-bg-active: #1a1a1a;
+  --btn-secondary-text: #e0e0e0;
+  --btn-secondary-border: #404040;
 }
