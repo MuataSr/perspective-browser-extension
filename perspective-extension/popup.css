@@ -220,6 +220,66 @@ h1::after {
   outline: none;
 }
 
+/* ==================== ACCORDION FOR MAIN PAGE ==================== */
+
+.accordion-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.accordion-card:last-child {
+  margin-bottom: 0;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.accordion-header:hover {
+  background: var(--bg-tertiary);
+}
+
+.accordion-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  border: none;
+  padding: 0;
+}
+
+.accordion-chevron {
+  color: var(--text-tertiary);
+  transition: transform 0.3s ease;
+}
+
+.accordion-card.expanded .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  padding: 0 20px 20px 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.accordion-card.expanded .accordion-content {
+  max-height: 1000px;
+  padding: 0 20px 20px 20px;
+}
+
 /* Tooltip Container */
 .tooltip-container {
   position: fixed;
@@ -348,66 +408,6 @@ h1::after {
   transform: translateX(0);
 }
 
-/* ==================== ACCORDION ==================== */
-
-.accordion-card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 12px;
-  background: var(--bg-secondary);
-  overflow: hidden;
-}
-
-.accordion-card:last-child {
-  margin-bottom: 0;
-}
-
-.accordion-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  user-select: none;
-}
-
-.accordion-header:hover {
-  background: var(--bg-tertiary);
-}
-
-.accordion-header h3 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-  text-transform: none;
-  letter-spacing: 0;
-  border: none;
-  padding: 0;
-}
-
-.accordion-chevron {
-  color: var(--text-tertiary);
-  transition: transform 0.3s ease;
-}
-
-.accordion-card.expanded .accordion-chevron {
-  transform: rotate(180deg);
-}
-
-.accordion-content {
-  padding: 0 20px 20px 20px;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-}
-
-.accordion-card.expanded .accordion-content {
-  max-height: 1000px;
-  padding: 0 20px 20px 20px;
-}
-
 /* Settings Panel Header */
 .settings-panel-header {
   display: flex;
@@ -459,7 +459,26 @@ h1::after {
   padding: 0;
 }
 
-/* Section Description (used within accordion) */
+/* Settings Sections */
+.settings-section {
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-section:last-of-type {
+  border-bottom: none;
+}
+
+.settings-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .section-description {
   font-size: 13px;
   color: var(--text-secondary);

@@ -102,45 +102,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // ==================== ACCORDION FUNCTIONALITY ====================
-
-  // Initialize accordion
-  function initializeAccordion() {
-    const accordionCards = document.querySelectorAll('.accordion-card');
-
-    accordionCards.forEach(card => {
-      const header = card.querySelector('.accordion-header');
-      const content = card.querySelector('.accordion-content');
-
-      header.addEventListener('click', () => {
-        const isExpanded = card.classList.contains('expanded');
-
-        // Close all other accordion cards (exclusive accordion)
-        accordionCards.forEach(otherCard => {
-          if (otherCard !== card) {
-            otherCard.classList.remove('expanded');
-          }
-        });
-
-        // Toggle current card
-        if (isExpanded) {
-          card.classList.remove('expanded');
-        } else {
-          card.classList.add('expanded');
-        }
-      });
-    });
-
-    // Open first accordion card by default
-    const firstCard = accordionCards[0];
-    if (firstCard) {
-      firstCard.classList.add('expanded');
-    }
-  }
-
-  // Initialize accordion when DOM is ready
-  initializeAccordion();
-
   // Logical Fallacy Terms Database
   const FALLACY_TERMS = {
     'ad hominem': 'Attacking the person making the argument rather than the argument itself.',
@@ -313,6 +274,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, true);
   }
 
+  // ==================== ACCORDION FOR MAIN PAGE ====================
+
+  // Initialize accordion for main analysis page
+  function initializeMainPageAccordion() {
+    const accordionCards = document.querySelectorAll('.accordion-card');
+
+    accordionCards.forEach(card => {
+      const header = card.querySelector('.accordion-header');
+
+      header.addEventListener('click', () => {
+        const isExpanded = card.classList.contains('expanded');
+
+        // Close all other accordion cards (exclusive accordion)
+        accordionCards.forEach(otherCard => {
+          if (otherCard !== card) {
+            otherCard.classList.remove('expanded');
+          }
+        });
+
+        // Toggle current card
+        if (isExpanded) {
+          card.classList.remove('expanded');
+        } else {
+          card.classList.add('expanded');
+        }
+      });
+    });
+
+    // Open first accordion card by default
+    const firstCard = accordionCards[0];
+    if (firstCard) {
+      firstCard.classList.add('expanded');
+    }
+  }
+
   // Function to format the counterarguments response
   function formatCounterarguments(data, isCached = false) {
     // Check if this is a cached result
@@ -341,9 +337,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     sectionOrder.forEach(sectionTitle => {
       if (sections[sectionTitle] && sections[sectionTitle].length > 0) {
-        html += `<div class="analysis-section">
-          <h3 class="section-heading">${sectionTitle}</h3>
-          <ul class="counterarguments-list">
+        html += `<div class="accordion-card" data-section="${sectionTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}">
+          <div class="accordion-header">
+            <h3>${sectionTitle}</h3>
+            <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+          </div>
+          <div class="accordion-content">
+            <ul class="counterarguments-list">
         `;
 
         sections[sectionTitle].forEach(item => {
@@ -351,12 +353,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           html += `<li>${highlightedItem}</li>`;
         });
 
-        html += `</ul></div>`;
+        html += `</ul></div></div>`;
       }
     });
 
     // Display the formatted output
     placeholder.innerHTML = html;
+
+    // Initialize accordion for the main page
+    initializeMainPageAccordion();
 
     // Note: Tooltip functionality removed - fallacy terms now use <strong> for bold formatting only
   }
