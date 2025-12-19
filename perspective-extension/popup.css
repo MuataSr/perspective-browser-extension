@@ -179,7 +179,7 @@ h1::after {
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 0 8px rgba(100, 181, 246, 0.3);
+  box-shadow: 0 0 12px rgba(100, 181, 246, 0.5), 0 0 24px rgba(100, 181, 246, 0.3);
 }
 
 /* Analysis Sections */
@@ -798,5 +798,5 @@ body.dark-mode .status-message.error {
 }
 
 body.dark-mode .counterarguments-list .cached-indicator {
-  box-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+  box-shadow: 0 0 16px rgba(100, 181, 246, 0.7), 0 0 32px rgba(100, 181, 246, 0.4);
 }
