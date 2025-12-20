@@ -322,11 +322,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Create HTML for the categorized output
     let html = '';
 
-    // Add cached indicator if needed
-    if (isCached) {
-      html += '<span class="cached-indicator">Cached Result</span>';
-    }
-
     // Render each section
     const sectionOrder = [
       'Counter Arguments',
@@ -335,7 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'Source Credibility & Bias'
     ];
 
-    sectionOrder.forEach(sectionTitle => {
+    sectionOrder.forEach((sectionTitle, index) => {
       if (sections[sectionTitle] && sections[sectionTitle].length > 0) {
         html += `<div class="accordion-card" data-section="${sectionTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}">
           <div class="accordion-header">
@@ -345,6 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </svg>
           </div>
           <div class="accordion-content">
+            ${isCached && index === 0 ? '<span class="cached-indicator">Cached Result</span>' : ''}
             <ul class="counterarguments-list">
         `;
 
