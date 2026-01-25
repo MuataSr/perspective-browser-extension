@@ -43,3 +43,6 @@ secrets/
 private/
 notes/
 drafts/
+
+# ==== AI/Claude Context Files ====
+CLAUDE.md
