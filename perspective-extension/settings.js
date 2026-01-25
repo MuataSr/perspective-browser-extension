@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS = {
 
 // Gemini API configuration
 const GEMINI_API_CONFIG = {
-  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent',
+  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
   testEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
 };
 

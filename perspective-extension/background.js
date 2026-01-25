@@ -2,8 +2,8 @@
 
 // Configuration for Google Gemini API
 const GEMINI_API_CONFIG = {
-  model: 'gemini-1.5-flash-001',
-  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent',
+  model: 'gemini-2.5-flash',
+  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
   timeout: 60000, // 60 second timeout
   maxInputChars: 1000, // Reduced for faster processing
   maxOutputTokens: 400, // Reduced for faster response
