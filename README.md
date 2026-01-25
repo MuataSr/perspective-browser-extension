@@ -3,32 +3,32 @@
 > A Chrome extension that acts as a critical thinking coach, providing counterarguments, logical fallacy detection, and bias analysis for web articles.
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-orange)](https://chrome.google.com/webstore)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#)
 [![OER](https://img.shields.io/badge/Open-Educational-Resource-red.svg)]()
 
 ---
 
-## 🎯 What is Perspective?
+## What is Perspective?
 
 **Perspective** is a Chrome extension designed to enhance critical thinking by providing AI-powered analysis of web articles. When you encounter an article online, Perspective can:
 
-- 🎯 **Generate counterarguments** - Present alternative viewpoints to help you think critically
-- 🧠 **Detect logical fallacies** - Identify flawed reasoning patterns (ad hominem, strawman, false dilemmas, etc.)
-- 📊 **Assess source credibility** - Evaluate author expertise, citations, and publication reputation
-- ⚖️ **Identify bias** - Recognize political or ideological bias in article presentation
+- Generate counterarguments and alternative viewpoints
+- Detect logical fallacies in the reasoning (ad hominem, strawman, false dilemmas, etc.)
+- Assess source credibility and author expertise
+- Identify bias and loaded language in the presentation
 
 Perfect for students, educators, journalists, and anyone who wants to engage more thoughtfully with online content.
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 - **Instant Analysis** - Click the extension icon while reading any article
-- **AI-Powered Insights** - Uses advanced language models (DeepSeek, GPT-4, Claude, etc.)
+- **AI-Powered Insights** - Uses Google Gemini 2.5 Flash for analysis
 - **Minimalist UI** - Clean, distraction-free design that puts content first
-- **Fast Performance** - Optimized for speed with 2-3x faster loading than standard implementations
+- **Smart Caching** - Automatically caches results for 7 days to speed up repeated analyses
 
 ### Analysis Types
 - **Counterarguments** - Alternative perspectives and opposing viewpoints
@@ -37,58 +37,31 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 - **Bias Detection** - Identification of ideological bias and loaded language
 
 ### User Experience
-- **Zero Friction** - Works immediately with shared API (10 analyses/day)
-- **Unlimited Mode** - Add your own API key for unlimited use
+- **Dark Mode** - Auto-detect system preference or choose manually
 - **Customizable** - Toggle analysis features on/off
-- **Rate Limited** - Sustainable free tier with upgrade options
+- **API Key Only** - Bring your own Gemini API key for unlimited use
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
-### Main Popup - Minimalist Design
-```
-┌─────────────────────────────────────┐
-│  Perspective                        │
-│  ─────────────────────────────      │
-│                                     │
-│  • Each counterargument in clean    │
-│    card with subtle styling         │
-│                                     │
-│  • Simple dot bullets, generous     │
-│    spacing                          │
-│                                     │
-│  • Professional typography          │
-│                                     │
-│  • Distraction-free reading         │
-└─────────────────────────────────────┘
-```
+### Main Popup - Analysis Results
+![Main Popup](perspective-extension/perspectiveui.png)
 
-### Settings Panel
-```
-┌─────────────────────────────────────┐
-│  Perspective - Settings             │
-│                                     │
-│  API Configuration                  │
-│  ○ Free Tier (10/day)               │
-│  ● Personal Key (Unlimited)         │
-│  [Enter your API key...]            │
-│  [Test Connection] [Save]           │
-│                                     │
-│  Analysis Features                  │
-│  ☑ Logical Fallacies Detection     │
-│  ☑ Source Credibility Check        │
-│  ☑ Bias Detection                  │
-│                                     │
-│  [Reset to Defaults]                │
-└─────────────────────────────────────┘
-```
+### Counter Arguments Expanded
+![Counter Arguments](perspective-extension/perspectiveui2.png)
+
+### Settings Page
+![Settings](perspective-extension/perspectivesettings1.png)
+
+### Settings Page - Dark Mode
+![Settings Dark Mode](perspective-extension/perspectivesettings2.png)
 
 ---
 
-## 🚀 Installation
+## Installation
 
-### Method 1: Load Unpacked (Development)
+### Load Unpacked (Development)
 
 1. **Download or clone this repository**
    ```bash
@@ -107,14 +80,25 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 4. **Start Using**
    - Navigate to any article webpage
    - Click the Perspective icon
+   - Enter your Gemini API key in Settings
    - Wait for analysis (usually 5-15 seconds)
-
-### Method 2: Chrome Web Store (Coming Soon)
-> The extension will be published to the Chrome Web Store in a future release.
 
 ---
 
-## 🛠️ Development
+## API Key Setup
+
+Perspective uses **Google Gemini 2.5 Flash** for analysis. You need to provide your own API key:
+
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey)
+2. Click the settings icon in the extension popup
+3. Paste your API key and save
+4. The extension is now ready to use
+
+**Note**: API calls are billed by Google based on usage. The Gemini 2.5 Flash model is cost-effective for this use case.
+
+---
+
+## Development
 
 ### Prerequisites
 - Google Chrome (latest version)
@@ -125,16 +109,15 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 ```
 perspective-extension/
 ├── manifest.json              # Extension configuration
-├── background.js              # Service worker - AI integration
+├── background.js              # Service worker - AI integration, caching
 ├── popup.html                 # Main popup UI
 ├── popup.js                   # Popup logic
 ├── popup.css                  # Popup styling
 ├── settings.html              # Settings page UI
 ├── settings.js                # Settings logic
 ├── settings.css               # Settings styling
-├── lib/
-│   └── Readability.js         # Mozilla's content extraction
-└── README.md                  # This file
+└── lib/
+    └── Readability.js         # Mozilla's content extraction
 ```
 
 ### Key Technologies
@@ -142,7 +125,7 @@ perspective-extension/
 - **Vanilla JavaScript** (no frameworks)
 - **chrome.storage API** (for settings)
 - **Readability.js** (content extraction)
-- **Abacus AI API** (or compatible LLM providers)
+- **Google Gemini 2.5 Flash** (AI analysis)
 
 ### Building from Source
 This extension requires no build process - it's pure HTML, CSS, and JavaScript.
@@ -151,27 +134,6 @@ This extension requires no build process - it's pure HTML, CSS, and JavaScript.
 2. Reload the extension in `chrome://extensions/`
 3. Test your changes
 
-### API Configuration
-
-The extension supports a **hybrid API model**:
-
-**Free Tier (Default)**
-- Uses shared API key
-- 10 analyses per day
-- Works immediately, no setup
-
-**Personal Key Mode**
-- Users provide their own API key
-- Unlimited analyses
-- Stored securely in Chrome's storage
-
-**Supported Providers**
-- Abacus AI (current default)
-- OpenAI (GPT-4, GPT-3.5)
-- Anthropic Claude
-- OpenRouter
-- Other OpenAI-compatible APIs
-
 ### Testing
 
 1. **Load the extension** (see Installation)
@@ -179,12 +141,12 @@ The extension supports a **hybrid API model**:
 3. **Click the Perspective icon**
 4. **Check the results** in the popup
 5. **Debug if needed:**
-   - Background script: `chrome://extensions/` → Perspective → "background page"
+   - Background script: `chrome://extensions/` → Perspective → "service worker"
    - Popup: Right-click extension icon → "Inspect popup"
 
 ---
 
-## 📚 Architecture
+## Architecture
 
 ### Data Flow
 
@@ -193,59 +155,53 @@ User clicks extension icon
     ↓
 popup.js injects Readability.js into page
     ↓
-popup.js extracts article text
-    ↓
-popup.js checks usage limits
+popup.js extracts article text (first 1000 chars)
     ↓
 popup.js sends text to background.js
     ↓
-background.js selects API key (shared vs personal)
+background.js checks cache (by URL + settings)
     ↓
-background.js builds dynamic prompt based on settings
+If not cached: calls Gemini API with user's API key
     ↓
-background.js calls LLM API
+Response cached in chrome.storage.local (7-day expiration)
     ↓
-LLM returns analysis
-    ↓
-background.js formats response
-    ↓
-popup.js displays results
+popup.js receives response, parses sections, displays in accordion
 ```
 
 ### Core Components
 
 **1. Popup Layer** (`popup.html`, `popup.js`, `popup.css`)
-- User interface
-- Content extraction
-- Usage tracking
-- Results display
+- User interface with accordion-style results display
+- Content extraction via injected Readability.js
+- Results rendering and interaction
 
 **2. Background Script** (`background.js`)
-- API integration
-- Rate limiting
-- Prompt building
-- Settings management
+- Google Gemini API integration
+- Response caching (7-day expiration, 100-entry limit)
+- Prompt building based on user settings
 
 **3. Settings Panel** (`settings.html`, `settings.js`, `settings.css`)
 - API key management
-- Feature toggles
-- Usage tracking
-- Preferences
+- Theme selection (auto/dark/light)
+- Feature toggles (logical fallacies, source credibility, bias detection)
 
 **4. Content Extraction** (`lib/Readability.js`)
-- Extracts clean article text
-- Removes ads, navigation, etc.
-- Mozilla's battle-tested library
+- Mozilla's battle-tested library for extracting clean article text
+- Removes ads, navigation, and boilerplate content
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Settings Options
 
 **API Configuration**
-- **Free Tier**: Uses shared key (10/day limit)
-- **Personal Key**: Your own API key (unlimited)
+- **API Key**: Your Google Gemini API key (required)
+
+**Theme**
+- **Auto**: Follow system preference
+- **Dark**: Always dark mode
+- **Light**: Always light mode
 
 **Analysis Features**
 - **Logical Fallacies Detection**: Flag ad hominem, strawman, false dilemmas, etc.
@@ -258,7 +214,7 @@ No environment variables required. All configuration is stored in Chrome's local
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! This is an Open Educational Resource (OER) project.
 
@@ -280,131 +236,91 @@ We welcome contributions! This is an Open Educational Resource (OER) project.
 
 ### Areas for Contribution
 
-- 🐛 Bug fixes
-- ✨ New analysis features
-- 🎨 UI/UX improvements
-- 📚 Documentation
-- 🧪 Testing
-- 🌐 Internationalization
-- ⚡ Performance optimization
+- Bug fixes
+- New analysis features
+- UI/UX improvements
+- Documentation
+- Performance optimization
+- Accessibility improvements
 
 ### Reporting Bugs
 
 If you find a bug, please open an issue with:
 
-- **Browser version**
-- **Extension version**
-- **Steps to reproduce**
-- **Expected behavior**
-- **Actual behavior**
-- **Screenshots if relevant**
+- Browser version
+- Extension version
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Screenshots if relevant
 
 ---
 
-## 🐛 Known Issues
+## Known Issues
 
 - **Readability fails** on some websites (custom JavaScript-heavy sites)
-- **Rate limiting** resets daily (not rolling 24-hour window)
-- **API key exposure** in free tier (key is visible in extension code - see security section)
+- **Cache size limit** - older cached articles are removed when cache exceeds 100 entries
 
 ---
 
-## 🔒 Security
+## Security
 
 ### API Key Security
 
-**Free Tier**
-- API key is embedded in the extension code
-- Suitable for limited free use (10 analyses/day)
-- Key can be extracted by technical users
-- Consider adding your own key for security
-
-**Personal Key Mode**
-- API key stored in Chrome's encrypted storage
-- Never transmitted except to the LLM provider
+- API key is stored in Chrome's encrypted storage
+- Never transmitted except to the Google Gemini API
 - Only accessible to the extension
-- Most secure option
 
 ### Data Privacy
 
 - **No data collection** - All processing happens locally
 - **No tracking** - No analytics or user tracking
 - **No server** - Everything runs in your browser
-- **API calls** - Only article text is sent to AI providers
-- **No storage** - Article content is not stored
+- **API calls** - Only article text (first 1000 chars) is sent to Google
+- **No storage** - Article content is not stored locally
 
 ### Best Practices
 
-1. **Use personal API key** for regular use
-2. **Review Chrome permissions** before installation
-3. **Check provider privacy policies** (OpenAI, Anthropic, etc.)
-4. **Don't analyze sensitive content** with free tier
+1. Review Chrome permissions before installation
+2. Check [Google's privacy policy](https://policies.google.com/privacy) for Gemini API
+3. Don't analyze sensitive content if privacy is critical
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ### Open Educational Resource (OER)
 
 This is designed as an **Open Educational Resource** for:
-- **Critical thinking education**
-- **Media literacy training**
-- **Digital citizenship**
-- **Philosophy and logic courses**
+
+- Critical thinking education
+- Media literacy training
+- Digital citizenship
+- Philosophy and logic courses
 
 Feel free to use, modify, and distribute for educational purposes!
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Mozilla Readability** - Content extraction library
-- **Abacus AI** - LLM API provider
+- **Google** - Gemini API and AI Studio
 - **Chrome Extension Team** - Platform and documentation
 - **Critical Thinking Community** - Inspiration and feedback
 
 ---
 
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/MuataSr/perspective-browser-extension/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/MuataSr/perspective-browser-extension/discussions)
-- **Email**: [Your contact information]
 
 ---
 
-## 🗺️ Roadmap
-
-### Version 0.2.0 (Next)
-- [ ] Settings Panel UI
-- [ ] Hybrid API system
-- [ ] Rate limiting implementation
-- [ ] Feature toggles
-
-### Version 0.3.0
-- [ ] Analysis history
-- [ ] Share functionality
-- [ ] Dark mode
-
-### Version 1.0.0
-- [ ] Chrome Web Store publication
-- [ ] Comprehensive testing
-- [ ] Performance optimization
-- [ ] Documentation complete
-
-### Future Features
-- [ ] Multiple article comparison
-- [ ] Critical thinking dashboard
-- [ ] Export to various formats
-- [ ] Mobile browser support (if possible)
-- [ ] Team/organization features
-- [ ] Advanced analytics
-
----
-
-## 💡 Why Perspective?
+## Why Perspective?
 
 In an age of information overload and polarized discourse, **critical thinking skills** are more important than ever. Perspective helps by:
 
@@ -414,10 +330,10 @@ In an age of information overload and polarized discourse, **critical thinking s
 4. **Enhancing decision-making** - Better information leads to better choices
 5. **Fighting misinformation** - Tools to identify bias and flawed reasoning
 
-**"The important thing is not to stop questioning. Curiosity has its own reason for existence."** - Albert Einstein
+> "The important thing is not to stop questioning. Curiosity has its own reason for existence." - Albert Einstein
 
 ---
 
-**Made with ❤️ for better thinking**
+**Made with for better thinking**
 
 [GitHub](https://github.com/MuataSr/perspective-browser-extension) • [Issues](https://github.com/MuataSr/perspective-browser-extension/issues) • [MIT License](LICENSE)
