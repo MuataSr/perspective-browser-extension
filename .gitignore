@@ -1,0 +1,45 @@
+# ==== OS Files ====
+.DS_Store
+Thumbs.db
+
+# ==== IDE/Editor ====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==== Development Files ====
+*.log
+*.tmp
+*.bak
+*-backup
+*.orig
+*.rej
+
+# ==== ZIP Files ====
+*.zip
+
+# ==== Testing/Debug Files ====
+test-*.js
+test-*.html
+debug-*.js
+verify-*.js
+
+# ==== Session/Backup Files ====
+SESSION_BACKUP.md
+*_backup.*
+*.backup
+
+# ==== Development Variations ====
+popup-alt.css
+popup-minimal.css
+settings-popup.*
+
+# ==== Private/Personal Files ====
+*.pem
+*.key
+secrets/
+private/
+notes/
+drafts/
