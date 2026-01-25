@@ -46,6 +46,20 @@ Perspective is a Chrome extension that acts as your personal critical thinking c
    - Loaded language used
    - Source credibility assessment
 
+## Screenshots
+
+![Main UI - Analysis Results](perspectiveui.png)
+*The main popup showing analysis results with counterarguments and fallacies detected*
+
+![Main UI - Dark Mode](perspectiveui2.png)
+*Dark mode support for comfortable viewing in any lighting*
+
+![Settings - API Configuration](perspectivesettings1.png)
+*Settings page for configuring your free Gemini API key*
+
+![Settings - Theme Options](perspectivesettings2.png)
+*Appearance settings with auto, dark, and light mode options*
+
 ## How It Works
 
 Perspective uses Google's Gemini AI model to analyze article content. The extension:
@@ -81,6 +95,11 @@ perspective-extension/
 ├── settings.html          # Settings page UI
 ├── settings.js            # Settings logic
 ├── settings.css           # Settings styling
+├── perspectiveui.png      # Screenshot: Main UI (light mode)
+├── perspectiveui2.png     # Screenshot: Main UI (dark mode)
+├── perspectivesettings1.png  # Screenshot: Settings API config
+├── perspectivesettings2.png  # Screenshot: Settings theme options
+├── README.md              # This file
 └── lib/
     └── Readability.js     # Mozilla's content extraction library
 ```
