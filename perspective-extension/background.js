@@ -6,7 +6,7 @@ const GEMINI_API_CONFIG = {
   endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
   timeout: 60000, // 60 second timeout
   maxInputChars: 1000, // Reduced for faster processing
-  maxOutputTokens: 400, // Reduced for faster response
+  maxOutputTokens: 2048, // Increased for Gemini 2.5 thinking mode
   cacheExpirationDays: 7 // Cache expires after 7 days
 };
 
@@ -224,7 +224,7 @@ async function getCounterargumentsFromGemini(text, settings, url) {
       ],
       generationConfig: {
         maxOutputTokens: GEMINI_API_CONFIG.maxOutputTokens,
-        temperature: 0.5
+        temperature: 0.3  // Lower temperature for more focused responses
       }
     };
 
