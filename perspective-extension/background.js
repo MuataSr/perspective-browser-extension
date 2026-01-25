@@ -1,14 +1,12 @@
 // background.js
 
-// Configuration for Abacus AI
-const ABACUS_API_CONFIG = {
-  endpoint: 'https://routellm.abacus.ai/v1/chat/completions',
-  sharedApiKey: 's2_114636cbfb9b4f4194185d452c6b19f8',
-  model: 'deepseek-ai/DeepSeek-V3.2',
+// Configuration for Google Gemini API
+const GEMINI_API_CONFIG = {
+  model: 'gemini-1.5-flash-001',
+  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent',
   timeout: 60000, // 60 second timeout
-  freeTierLimit: 10, // 10 analyses per day for free tier
   maxInputChars: 1000, // Reduced for faster processing
-  maxTokens: 400, // Reduced for faster response
+  maxOutputTokens: 400, // Reduced for faster response
   cacheExpirationDays: 7 // Cache expires after 7 days
 };
 
@@ -39,7 +37,7 @@ async function getCachedResult(url, settings) {
       const cachedDate = new Date(cached.timestamp);
       const daysDiff = (now - cachedDate) / (1000 * 60 * 60 * 24);
 
-      if (daysDiff < ABACUS_API_CONFIG.cacheExpirationDays) {
+      if (daysDiff < GEMINI_API_CONFIG.cacheExpirationDays) {
         console.log('Background: Using cached result for:', url);
         return {
           found: true,
@@ -95,7 +93,7 @@ async function cleanupCache() {
 
       const now = new Date();
       const entriesToKeep = [];
-      const expirationMs = ABACUS_API_CONFIG.cacheExpirationDays * 24 * 60 * 60 * 1000;
+      const expirationMs = GEMINI_API_CONFIG.cacheExpirationDays * 24 * 60 * 60 * 1000;
 
       // Check each entry
       for (const key of cacheEntries) {
@@ -148,7 +146,6 @@ async function getCurrentTabUrl() {
  */
 async function getSettings() {
   const result = await chrome.storage.sync.get({
-    usePersonalKey: false,
     userApiKey: '',
     settings: {
       logicalFallacies: true,
@@ -161,50 +158,6 @@ async function getSettings() {
     }
   });
   return result;
-}
-
-/**
- * Check and update usage for free tier
- */
-async function checkUsageLimit(settings) {
-  const today = new Date().toISOString().split('T')[0];
-  let usage = settings.usage || { date: today, count: 0 };
-
-  // Reset counter if it's a new day
-  if (usage.date !== today) {
-    usage = { date: today, count: 0 };
-    await chrome.storage.sync.set({ usage });
-  }
-
-  // Check limit only if using shared key
-  if (!settings.usePersonalKey && usage.count >= ABACUS_API_CONFIG.freeTierLimit) {
-    return {
-      allowed: false,
-      reason: 'limit_reached',
-      usage: usage
-    };
-  }
-
-  return {
-    allowed: true,
-    usage: usage
-  };
-}
-
-/**
- * Increment usage counter
- */
-async function incrementUsage() {
-  const result = await chrome.storage.sync.get('usage');
-  const today = new Date().toISOString().split('T')[0];
-  let usage = result.usage || { date: today, count: 0 };
-
-  if (usage.date !== today) {
-    usage = { date: today, count: 0 };
-  }
-
-  usage.count += 1;
-  await chrome.storage.sync.set({ usage });
 }
 
 /**
@@ -230,7 +183,7 @@ Below is an article. Please analyze it and provide your response in the followin
 
 Article:
 ---
-${text.substring(0, ABACUS_API_CONFIG.maxInputChars)}
+${text.substring(0, GEMINI_API_CONFIG.maxInputChars)}
 ---
 
 Response:`;
@@ -239,59 +192,56 @@ Response:`;
 }
 
 /**
- * Calls the Abacus AI API to get counterarguments.
+ * Calls the Google Gemini API to get counterarguments.
  * @param {string} text The article text to analyze.
  * @param {Object} settings User settings from chrome.storage
  * @param {string} url The current page URL
  * @returns {Promise<string>} A promise that resolves to the model's response.
  */
-async function getCounterargumentsFromAbacus(text, settings, url) {
+async function getCounterargumentsFromGemini(text, settings, url) {
   const prompt = buildPrompt(text, settings);
-
-  // Select API key (personal or shared)
-  const apiKey = settings.usePersonalKey ? settings.userApiKey : ABACUS_API_CONFIG.sharedApiKey;
+  const apiKey = settings.userApiKey;
 
   // Validate API key
   if (!apiKey || apiKey.trim() === '') {
     console.error('Background: No API key available');
-    return "Error: API key not configured. Please check your settings.";
+    return "Error: API key not configured. Please add your Gemini API key in Settings.";
   }
 
   try {
-    console.log("Background: Starting Abacus AI API call...");
-    console.log("Background: Using model:", ABACUS_API_CONFIG.model);
-    console.log("Background: Endpoint:", ABACUS_API_CONFIG.endpoint);
-    console.log("Background: API mode:", settings.usePersonalKey ? "Personal" : "Shared");
+    console.log("Background: Starting Gemini API call...");
+    console.log("Background: Using model:", GEMINI_API_CONFIG.model);
+    console.log("Background: API key present:", apiKey ? 'yes' : 'no');
 
-    // Prepare request body (OpenAI-compatible format)
+    // Prepare request body (Gemini format)
     const requestBody = {
-      model: ABACUS_API_CONFIG.model,
-      messages: [
+      contents: [
         {
-          role: 'user',
-          content: prompt
+          parts: [
+            { text: prompt }
+          ]
         }
       ],
-      max_tokens: ABACUS_API_CONFIG.maxTokens,
-      temperature: 0.5
+      generationConfig: {
+        maxOutputTokens: GEMINI_API_CONFIG.maxOutputTokens,
+        temperature: 0.5
+      }
     };
 
-    console.log("Background: Sending request to Abacus AI...");
-    console.log("Background: Request body:", JSON.stringify(requestBody, null, 2));
+    console.log("Background: Sending request to Gemini...");
 
     // Create abort controller for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log("Background: Request timeout after 30 seconds");
       controller.abort();
-    }, ABACUS_API_CONFIG.timeout);
+    }, GEMINI_API_CONFIG.timeout);
 
-    // Make API call
-    const response = await fetch(ABACUS_API_CONFIG.endpoint, {
+    // Make API call - API key goes in query parameter
+    const response = await fetch(`${GEMINI_API_CONFIG.endpoint}?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody),
       signal: controller.signal
@@ -306,22 +256,39 @@ async function getCounterargumentsFromAbacus(text, settings, url) {
       const errorText = await response.text();
       console.error('Background: API Error - Status:', response.status);
       console.error('Background: API Error - Response:', errorText);
-      throw new Error(`API call failed: ${response.status} - ${errorText}`);
+
+      // Check for common errors
+      if (response.status === 400) {
+        return "Error: Invalid request to Gemini API. Please check your API key and try again.";
+      } else if (response.status === 401) {
+        return "Error: Invalid API key. Please check your Gemini API key in Settings.";
+      } else if (response.status === 429) {
+        return "Error: Rate limit exceeded. Please wait a moment and try again.";
+      }
+      throw new Error(`API call failed: ${response.status}`);
     }
 
     const data = await response.json();
     console.log("Background: Full response data:", JSON.stringify(data, null, 2));
 
-    // Extract response based on OpenAI-compatible format
-    const result = data.choices?.[0]?.message?.content || data.response || data.text || 'No response from AI model';
+    // Extract response from Gemini format
+    let result = '';
+    if (data.candidates && data.candidates.length > 0) {
+      result = data.candidates[0]?.content?.parts?.[0]?.text || '';
+    }
 
-    console.log("Background: Successfully extracted response:", result);
+    if (!result) {
+      console.error('Background: No content in response');
+      return "Error: No response from Gemini API.";
+    }
+
+    console.log("Background: Successfully extracted response:", result.substring(0, 100) + "...");
 
     console.log("Background: Returning counterarguments to popup");
     return result;
 
   } catch (error) {
-    console.error("Background: Error in getCounterargumentsFromAbacus:", error);
+    console.error("Background: Error in getCounterargumentsFromGemini:", error);
 
     if (error.name === 'AbortError') {
       console.error("Background: Request was aborted (timeout)");
@@ -340,16 +307,17 @@ async function getCounterargumentsFromAbacus(text, settings, url) {
 }
 
 /**
- * Create limit reached message
+ * Create no API key message
  */
-function createLimitReachedMessage(usage) {
+function createNoApiKeyMessage() {
   const settingsLink = 'chrome-extension://' + chrome.runtime.id + '/settings.html';
-  return `⚠️ Daily Limit Reached
+  return `⚠️ API Key Required
 
-You've used ${usage.count}/${ABACUS_API_CONFIG.freeTierLimit} free analyses today.
+Perspective needs your Gemini API key to analyze articles.
 
-Add your own API key for unlimited use:
-${settingsLink}`;
+<a href="${settingsLink}" style="color: var(--error-text); text-decoration: underline;">Open Settings to add your API key</a>
+
+<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--error-text); text-decoration: underline;">Get a free API key from Google AI Studio</a>`;
 }
 
 // Main listener for requests from the popup.
@@ -366,8 +334,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           getCurrentTabUrl()
         ]);
 
-        console.log('Background: Loaded settings:', settings);
+        console.log('Background: Loaded settings:', {
+          hasApiKey: !!settings.userApiKey,
+          darkMode: settings.darkMode
+        });
         console.log('Background: Current URL:', currentUrl);
+
+        // Check if API key is configured
+        if (!settings.userApiKey || settings.userApiKey.trim() === '') {
+          sendResponse({ data: createNoApiKeyMessage() });
+          return;
+        }
 
         // Check cache first
         const cachedResult = await getCachedResult(currentUrl, settings);
@@ -378,13 +355,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           return;
         }
 
-        console.log('Background: No cached result, checking usage limit...');
-
-        // Check usage limit for non-cached requests
-        const usageCheck = await checkUsageLimit(settings);
-        if (!usageCheck.allowed) {
-          return sendResponse({ data: createLimitReachedMessage(usageCheck.usage) });
-        }
+        console.log('Background: No cached result, calling Gemini API...');
 
         // Add timeout wrapper to prevent hanging
         const timeoutPromise = new Promise((_, reject) => {
@@ -394,17 +365,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }, 45000);
         });
 
-        const analysisPromise = getCounterargumentsFromAbacus(request.text, settings, currentUrl);
+        const analysisPromise = getCounterargumentsFromGemini(request.text, settings, currentUrl);
 
         Promise.race([analysisPromise, timeoutPromise])
           .then(async (counterarguments) => {
             console.log('Background: Promise resolved, sending response back to popup');
-
-            // Increment usage counter (only for shared key and only for new API calls)
-            if (!settings.usePersonalKey) {
-              await incrementUsage();
-              console.log("Background: Incremented usage counter");
-            }
 
             // Store result in cache
             await storeCachedResult(currentUrl, settings, counterarguments);

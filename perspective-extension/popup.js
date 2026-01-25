@@ -521,30 +521,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadUsageInfo() {
     try {
       const result = await chrome.storage.sync.get({
-        usePersonalKey: false,
-        usage: {
-          date: new Date().toISOString().split('T')[0],
-          count: 0
-        }
+        userApiKey: ''
       });
 
-      const usePersonalKey = result.usePersonalKey;
-      const usage = result.usage;
-      const today = new Date().toISOString().split('T')[0];
+      const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
 
-      // Reset count if it's a new day
-      if (usage.date !== today) {
-        const newUsage = { date: today, count: 0 };
-        await chrome.storage.sync.set({ usage: newUsage });
-        usage.count = 0;
-      }
-
-      if (usePersonalKey) {
-        usageInfo.textContent = 'Unlimited';
+      if (hasApiKey) {
+        usageInfo.textContent = 'Gemini';
         usageInfo.style.color = 'var(--text-tertiary)';
       } else {
-        usageInfo.textContent = `${usage.count}/10 today`;
-        usageInfo.style.color = usage.count >= 8 ? 'var(--error-text)' : 'var(--text-tertiary)';
+        usageInfo.textContent = 'Setup required';
+        usageInfo.style.color = 'var(--error-text)';
       }
     } catch (error) {
       console.error('Error loading usage info:', error);
@@ -595,21 +582,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        usePersonalKey: false,
         userApiKey: '',
         darkMode: 'auto',
         logicalFallacies: true,
         sourceCredibility: true,
         biasDetection: true
       });
-
-      // API Mode
-      if (result.usePersonalKey) {
-        document.getElementById('use-personal').checked = true;
-        document.getElementById('personal-key-section').style.display = 'block';
-      } else {
-        document.getElementById('use-shared').checked = true;
-      }
 
       // API Key
       if (result.userApiKey) {
@@ -636,33 +614,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadUsageInfoForSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        usePersonalKey: false,
+        userApiKey: '',
         usage: {
           date: new Date().toISOString().split('T')[0],
           count: 0
         }
       });
 
-      const usePersonalKey = result.usePersonalKey;
-      const usage = result.usage;
-      const today = new Date().toISOString().split('T')[0];
-
-      // Reset count if it's a new day
-      if (usage.date !== today) {
-        const newUsage = { date: today, count: 0 };
-        await chrome.storage.sync.set({ usage: newUsage });
-        usage.count = 0;
-      }
-
-      const settingsUsageInfo = document.getElementById('settings-usage-info');
+      const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
       const settingsUsageCount = document.getElementById('settings-usage-count');
 
-      if (usePersonalKey) {
-        settingsUsageCount.textContent = '✓ Using personal API key - unlimited analyses';
+      if (hasApiKey) {
+        settingsUsageCount.textContent = '✓ API key configured - using Gemini';
         settingsUsageCount.style.color = 'var(--text-primary)';
       } else {
-        settingsUsageCount.textContent = `Using free tier - ${usage.count}/10 analyses used today`;
-        settingsUsageCount.style.color = usage.count >= 8 ? 'var(--error-text)' : 'var(--text-primary)';
+        settingsUsageCount.textContent = '⚠️ No API key configured';
+        settingsUsageCount.style.color = 'var(--error-text)';
       }
     } catch (error) {
       console.error('Error loading usage info for settings:', error);
@@ -672,7 +639,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Save settings to chrome.storage
   async function saveSettings() {
     try {
-      const usePersonalKey = document.getElementById('use-personal').checked;
       const userApiKey = document.getElementById('user-api-key').value;
       const darkMode = document.querySelector('input[name="theme-mode"]:checked').value;
       const logicalFallacies = document.getElementById('logical-fallacies').checked;
@@ -680,7 +646,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const biasDetection = document.getElementById('bias-detection').checked;
 
       await chrome.storage.sync.set({
-        usePersonalKey,
         userApiKey,
         darkMode,
         logicalFallacies,
@@ -716,10 +681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function resetSettings() {
     try {
       // Reset form inputs
-      document.getElementById('use-shared').checked = true;
-      document.getElementById('use-personal').checked = false;
       document.getElementById('user-api-key').value = '';
-      document.getElementById('personal-key-section').style.display = 'none';
       document.getElementById('theme-auto').checked = true;
       document.getElementById('logical-fallacies').checked = true;
       document.getElementById('source-credibility').checked = true;
@@ -761,19 +723,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 10000);
       });
 
-      // Create fetch promise
-      const fetchPromise = fetch('https://routellm.abacus.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'deepseek-ai/DeepSeek-V3.2',
-          messages: [{ role: 'user', content: 'Test' }],
-          max_tokens: 5
-        })
-      });
+      // Test by making a simple request to list models (lightweight test)
+      const fetchPromise = fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
 
       // Race fetch against timeout
       const response = await Promise.race([fetchPromise, timeoutPromise]);
@@ -798,18 +749,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       testBtn.textContent = 'Test';
     }
   }
-
-  // API mode change handler
-  document.querySelectorAll('input[name="api-mode"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      const personalSection = document.getElementById('personal-key-section');
-      if (e.target.value === 'personal') {
-        personalSection.style.display = 'block';
-      } else {
-        personalSection.style.display = 'none';
-      }
-    });
-  });
 
   // Save settings button
   document.getElementById('save-settings').addEventListener('click', saveSettings);

@@ -7,7 +7,7 @@
     "storage",
     "activeTab",
     "scripting",
-    "https://routellm.abacus.ai/*"
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "background.js"

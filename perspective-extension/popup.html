@@ -44,30 +44,16 @@
     <div class="settings-panel-content">
       <!-- API Configuration Section -->
       <section class="settings-section">
-        <h3>API Configuration</h3>
-        <div class="radio-group">
-          <div class="radio-option">
-            <input type="radio" id="use-shared" name="api-mode" value="shared" checked>
-            <label for="use-shared">
-              <span class="option-title">Free Tier</span>
-              <span class="option-description">10 analyses per day</span>
-              <span class="option-note">Uses shared API key</span>
-            </label>
-          </div>
-          <div class="radio-option">
-            <input type="radio" id="use-personal" name="api-mode" value="personal">
-            <label for="use-personal">
-              <span class="option-title">Personal Key</span>
-              <span class="option-description">Unlimited analyses</span>
-              <span class="option-note">Use your own Abacus AI key</span>
-            </label>
-          </div>
-        </div>
-        <div class="personal-key-section" id="personal-key-section" style="display: none;">
-          <label for="user-api-key">Abacus AI API Key</label>
+        <h3>Gemini API Configuration</h3>
+        <p class="section-description">Enter your free Gemini API key to use Perspective.</p>
+        <div class="personal-key-section">
+          <label for="user-api-key">Your Gemini API Key</label>
           <div class="key-input-container">
-            <input type="password" id="user-api-key" placeholder="Enter your Abacus AI API key">
+            <input type="password" id="user-api-key" placeholder="Enter your Gemini API key">
             <button id="test-key-btn" class="btn-secondary">Test</button>
+          </div>
+          <div class="option-note" style="margin-bottom: 8px;">
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a free API key from Google AI Studio</a>
           </div>
           <div id="key-status" class="status-message"></div>
         </div>
