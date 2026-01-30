@@ -334,6 +334,6 @@ In an age of information overload and polarized discourse, **critical thinking s
 
 ---
 
-**Made with for better thinking**
+**Made using Claude Code + MiniMax M2.1 + Mu2.solutions for better thinking**
 
 [GitHub](https://github.com/MuataSr/perspective-browser-extension) • [Issues](https://github.com/MuataSr/perspective-browser-extension/issues) • [MIT License](LICENSE)
