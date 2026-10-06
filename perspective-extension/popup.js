@@ -4,8 +4,7 @@ import * as webllm from './lib/webllm.bundle.js';
 
 const LOCAL_MODELS = {
   'gemma3-1b-it-q4f16_1-MLC': 'Gemma 3 1B',
-  'gemma-2-2b-it-q4f16_1-MLC': 'Gemma 2 2B',
-  'Qwen2.5-0.5B-Instruct-q4f16_1-MLC': 'Qwen2.5 0.5B'
+  'gemma-2-2b-it-q4f16_1-MLC': 'Gemma 2 2B'
 };
 
 const DEFAULT_LOCAL_MODEL = 'gemma3-1b-it-q4f16_1-MLC';
@@ -539,14 +538,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Decide which engine to use, then run the analysis
+  // Run the analysis on the on-device model
   async function runAnalysis(articleText, url) {
     let selected;
     try {
       selected = await chrome.storage.sync.get({
-        provider: 'local',
         localModel: DEFAULT_LOCAL_MODEL,
-        userApiKey: '',
         settings: {
           logicalFallacies: true,
           sourceCredibility: true,
@@ -559,27 +556,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    if (selected.provider === 'local') {
-      await runLocalAnalysis(articleText, url, selected);
-    } else {
-      runCloudAnalysis(articleText);
-    }
+    await runLocalAnalysis(articleText, url, selected);
   }
 
-  // ---- On-device engine path (runs here in the popup; after the one-time model download, no network needed) ----
+  // On-device engine path: runs here in the popup; after the one-time model
+  // download it needs no network at all.
   async function runLocalAnalysis(articleText, url, selected) {
     const modelId = selected.localModel || DEFAULT_LOCAL_MODEL;
 
     if (!('gpu' in navigator)) {
       placeholder.classList.remove('loading');
-      placeholder.innerHTML = '<div class="error-message">On-device mode needs WebGPU (Chrome 113 or newer). Switch to the Cloud engine in <a href="#" id="open-settings-link">Settings</a>, or update your browser.</div>';
-      const link = document.getElementById('open-settings-link');
-      if (link) {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          chrome.runtime.openOptionsPage();
-        });
-      }
+      placeholder.innerHTML = '<div class="error-message">Perspective runs its AI on your device and needs WebGPU (Chrome 113 or newer). Please update Chrome to use the extension.</div>';
       return;
     }
 
@@ -600,8 +587,48 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.warn('Cache read failed:', e);
     }
 
+    // One-time consent before the model download. Asked once; after the model
+    // is in the browser cache this step never runs again.
+    let inCache = false;
     try {
-      placeholder.innerHTML = `Preparing ${localModelLabel(modelId)}<span class="ellipsis"></span>`;
+      inCache = await webllm.hasModelInCache(modelId);
+    } catch (e) {
+      inCache = false;
+    }
+
+    if (!inCache) {
+      showDownloadConsent(modelId, () => {
+        startLocalRun(articleText, modelId, cacheKey);
+      });
+      return;
+    }
+
+    startLocalRun(articleText, modelId, cacheKey);
+  }
+
+  // One-time download consent UI (no silent gigabyte)
+  function showDownloadConsent(modelId, onProceed) {
+    const sizeNote = modelId === 'gemma-2-2b-it-q4f16_1-MLC' ? '~2 GB' : '~0.8 GB';
+    placeholder.classList.remove('loading');
+    placeholder.innerHTML =
+      '<div class="error-message" style="text-align:left;">' +
+      '<strong>One-time download needed</strong><br>' +
+      localModelLabel(modelId) + ' is a small AI model that runs inside your browser (' + sizeNote + '). It downloads once from Hugging Face, then lives on this machine — after that, Perspective works offline and nothing about what you read ever leaves your device.<br><br>' +
+      '<button id="consent-download" class="btn-primary">Download model</button> ' +
+      '<button id="consent-cancel" class="btn-secondary">Not now</button>' +
+      '</div>';
+
+    const goBtn = document.getElementById('consent-download');
+    const cancelBtn = document.getElementById('consent-cancel');
+    if (goBtn) goBtn.addEventListener('click', onProceed);
+    if (cancelBtn) cancelBtn.addEventListener('click', () => {
+      placeholder.innerHTML = 'No problem — nothing was downloaded. Click the icon again when you are ready.';
+    });
+  }
+
+  async function startLocalRun(articleText, modelId, cacheKey) {
+    try {
+      placeholder.innerHTML = 'Preparing ' + localModelLabel(modelId) + '<span class="ellipsis"></span>';
       placeholder.classList.add('loading');
       const result = await analyzeLocally(articleText, modelId, cacheKey);
       placeholder.classList.remove('loading');
@@ -609,75 +636,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('On-device analysis failed:', error);
       placeholder.classList.remove('loading');
-      placeholder.innerHTML = `<div class="error-message">On-device analysis failed: ${error.message}</div>`;
+      placeholder.innerHTML = '<div class="error-message">On-device analysis failed: ' + error.message + '</div>';
     }
   }
 
-  // ---- Cloud engine path (background service worker -> Gemini) ----
-  function runCloudAnalysis(articleText) {
-    placeholder.innerHTML = 'Article extracted. Finding counterarguments<span class="ellipsis"></span>';
-    placeholder.classList.add('loading');
-
-    const messagePromise = new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { type: 'getCounterarguments', text: articleText },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            resolve({ error: chrome.runtime.lastError.message });
-            return;
-          }
-          resolve(response);
-        }
-      );
-    });
-
-    const timeoutPromise = new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ error: 'timeout' });
-      }, 50000);
-    });
-
-    Promise.race([messagePromise, timeoutPromise]).then((response) => {
-      if (response && response.error === 'timeout') {
-        placeholder.classList.remove('loading');
-        placeholder.innerHTML = '<div class="error-message">⚠️ Request timed out. Please try again.</div>';
-        return;
-      }
-      if (response && response.data) {
-        if (response.data.startsWith('Error:') || response.data.startsWith('⚠️')) {
-          placeholder.classList.remove('loading');
-          placeholder.innerHTML = `<div class="error-message">${response.data}</div>`;
-        } else {
-          placeholder.classList.remove('loading');
-          formatCounterarguments(response.data, !!response.fromCache);
-        }
-      } else {
-        placeholder.innerText = 'No response from analysis service.';
-      }
-    });
-  }
-
-  // Load usage information from chrome.storage
   async function loadUsageInfo() {
     try {
       const result = await chrome.storage.sync.get({
-        userApiKey: '',
-        provider: 'local',
         localModel: DEFAULT_LOCAL_MODEL
       });
 
-      const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
-
-      if (result.provider === 'local') {
-        usageInfo.textContent = 'On-device • ' + localModelLabel(result.localModel);
-        usageInfo.style.color = 'var(--text-tertiary)';
-      } else if (hasApiKey) {
-        usageInfo.textContent = 'Cloud • Gemini';
-        usageInfo.style.color = 'var(--text-tertiary)';
-      } else {
-        usageInfo.textContent = 'Setup required';
-        usageInfo.style.color = 'var(--error-text)';
-      }
+      usageInfo.textContent = 'On-device • ' + localModelLabel(result.localModel || DEFAULT_LOCAL_MODEL);
+      usageInfo.style.color = 'var(--text-tertiary)';
     } catch (error) {
       console.error('Error loading usage info:', error);
       usageInfo.textContent = '';
@@ -723,20 +693,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Show which part of the engine settings is active
-  function updateEngineVisibility() {
-    const cloud = document.getElementById('engine-cloud').checked;
-    const localRow = document.getElementById('local-model').closest('.personal-key-section');
-    if (localRow) localRow.style.opacity = cloud ? '0.5' : '1';
-  }
-
   // Load settings from chrome.storage
   async function loadSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        userApiKey: '',
         darkMode: 'auto',
-        provider: 'local',
         localModel: DEFAULT_LOCAL_MODEL,
         settings: {
           logicalFallacies: true,
@@ -745,15 +706,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
 
-      // API Key
-      if (result.userApiKey) {
-        document.getElementById('user-api-key').value = result.userApiKey;
-      }
-
-      // AI Engine
-      document.querySelector(`input[name="engine-mode"][value="${result.provider}"]`).checked = true;
+      // On-device model
       document.getElementById('local-model').value = result.localModel;
-      updateEngineVisibility();
 
       // Theme
       document.querySelector(`input[name="theme-mode"][value="${result.darkMode}"]`).checked = true;
@@ -777,8 +731,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadUsageInfoForSettings() {
     try {
       const result = await chrome.storage.sync.get({
-        userApiKey: '',
-        provider: 'local',
         localModel: DEFAULT_LOCAL_MODEL,
         usage: {
           date: new Date().toISOString().split('T')[0],
@@ -786,21 +738,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
 
-      const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
       const settingsUsageCount = document.getElementById('settings-usage-count');
-      const provider = result.provider || 'local';
       const localModel = result.localModel || DEFAULT_LOCAL_MODEL;
 
-      if (provider === 'local') {
-        settingsUsageCount.textContent = '✓ On-device engine — private, no API key needed (' + localModelLabel(localModel) + ')';
-        settingsUsageCount.style.color = 'var(--text-primary)';
-      } else if (hasApiKey) {
-        settingsUsageCount.textContent = '✓ API key configured — using Gemini';
-        settingsUsageCount.style.color = 'var(--text-primary)';
-      } else {
-        settingsUsageCount.textContent = '⚠️ Cloud mode selected but no API key configured';
-        settingsUsageCount.style.color = 'var(--error-text)';
-      }
+      settingsUsageCount.textContent = '✓ On-device engine — private, fully local (' + localModelLabel(localModel) + ')';
+      settingsUsageCount.style.color = 'var(--text-primary)';
     } catch (error) {
       console.error('Error loading usage info for settings:', error);
     }
@@ -809,18 +751,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Save settings to chrome.storage
   async function saveSettings() {
     try {
-      const userApiKey = document.getElementById('user-api-key').value;
       const darkMode = document.querySelector('input[name="theme-mode"]:checked').value;
-      const provider = document.querySelector('input[name="engine-mode"]:checked').value;
       const localModel = document.getElementById('local-model').value;
       const logicalFallacies = document.getElementById('logical-fallacies').checked;
       const sourceCredibility = document.getElementById('source-credibility').checked;
       const biasDetection = document.getElementById('bias-detection').checked;
 
       await chrome.storage.sync.set({
-        userApiKey,
         darkMode,
-        provider,
         localModel,
         logicalFallacies,
         sourceCredibility,
@@ -860,10 +798,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function resetSettings() {
     try {
       // Reset form inputs
-      document.getElementById('user-api-key').value = '';
-      document.getElementById('engine-local').checked = true;
       document.getElementById('local-model').value = DEFAULT_LOCAL_MODEL;
-      updateEngineVisibility();
       document.getElementById('theme-auto').checked = true;
       document.getElementById('logical-fallacies').checked = true;
       document.getElementById('source-credibility').checked = true;
@@ -882,56 +817,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Test API key
-  async function testApiKey() {
-    const apiKey = document.getElementById('user-api-key').value;
-    const statusDiv = document.getElementById('key-status');
-    const testBtn = document.getElementById('test-key-btn');
-
-    if (!apiKey) {
-      statusDiv.textContent = 'Please enter an API key';
-      statusDiv.className = 'status-message error';
-      return;
-    }
-
-    testBtn.disabled = true;
-    testBtn.textContent = 'Testing...';
-
-    try {
-      // Create timeout promise (10 seconds)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('timeout'));
-        }, 10000);
-      });
-
-      // Test by making a simple request to list models (lightweight test)
-      const fetchPromise = fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-
-      // Race fetch against timeout
-      const response = await Promise.race([fetchPromise, timeoutPromise]);
-
-      if (response.ok) {
-        statusDiv.textContent = '✓ Connection successful!';
-        statusDiv.className = 'status-message success';
-      } else {
-        statusDiv.textContent = '✗ Invalid API key';
-        statusDiv.className = 'status-message error';
-      }
-    } catch (error) {
-      if (error.message === 'timeout') {
-        statusDiv.textContent = '✗ Request timed out - please try again';
-        statusDiv.className = 'status-message error';
-      } else {
-        statusDiv.textContent = '✗ Error testing key';
-        statusDiv.className = 'status-message error';
-      }
-    } finally {
-      testBtn.disabled = false;
-      testBtn.textContent = 'Test';
-    }
-  }
-
   // Save settings button
   document.getElementById('save-settings').addEventListener('click', saveSettings);
 
@@ -942,10 +827,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Test key button
-  document.getElementById('test-key-btn').addEventListener('click', testApiKey);
-
-  // AI engine radio buttons
-  document.getElementById('engine-local').addEventListener('change', updateEngineVisibility);
-  document.getElementById('engine-cloud').addEventListener('change', updateEngineVisibility);
 });

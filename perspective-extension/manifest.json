@@ -1,22 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Perspective",
-  "version": "0.7.0",
-  "description": "A critical thinking coach to help you analyze web pages — with a private on-device AI model or Google Gemini.",
+  "version": "0.8.0",
+  "description": "A critical thinking coach for web articles — powered by a small on-device AI model. Private, no API key, works offline.",
   "permissions": [
     "storage",
     "activeTab",
-    "scripting",
-    "https://generativelanguage.googleapis.com/*"
+    "scripting"
   ],
   "host_permissions": [
     "https://huggingface.co/*",
     "https://*.hf.co/*",
     "https://raw.githubusercontent.com/*"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
   "action": {
     "default_popup": "popup.html"
   },

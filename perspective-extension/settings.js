@@ -2,9 +2,7 @@
 
 // Default settings
 const DEFAULT_SETTINGS = {
-  userApiKey: '',
   darkMode: 'auto', // 'auto', 'dark', 'light'
-  provider: 'local', // 'local' (on-device, private) or 'cloud' (Gemini)
   localModel: 'gemma3-1b-it-q4f16_1-MLC',
   settings: {
     logicalFallacies: true,
@@ -17,15 +15,8 @@ const DEFAULT_SETTINGS = {
   }
 };
 
-// Gemini API configuration
-const GEMINI_API_CONFIG = {
-  endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-  testEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models'
-};
-
 // DOM elements
-let userApiKeyInput, testKeyBtn, keyStatus;
-let engineLocalRadio, engineCloudRadio, localModelSelect;
+let localModelSelect;
 let themeAutoRadio, themeDarkRadio, themeLightRadio;
 let logicalFallaciesCheckbox, sourceCredibilityCheckbox, biasDetectionCheckbox;
 let saveBtn, resetBtn, usageInfo;
@@ -48,12 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initializeElements() {
-  userApiKeyInput = document.getElementById('user-api-key');
-  testKeyBtn = document.getElementById('test-key-btn');
-  keyStatus = document.getElementById('key-status');
-
-  engineLocalRadio = document.getElementById('engine-local');
-  engineCloudRadio = document.getElementById('engine-cloud');
   localModelSelect = document.getElementById('local-model');
 
   themeAutoRadio = document.getElementById('theme-auto');
@@ -70,12 +55,6 @@ function initializeElements() {
 }
 
 function setupEventListeners() {
-  // Test API key
-  testKeyBtn.addEventListener('click', testApiKey);
-
-  // AI engine radios
-  engineLocalRadio.addEventListener('change', updateEngineVisibility);
-  engineCloudRadio.addEventListener('change', updateEngineVisibility);
 
   // Save settings
   saveBtn.addEventListener('click', saveSettings);
@@ -84,29 +63,11 @@ function setupEventListeners() {
   resetBtn.addEventListener('click', resetToDefaults);
 }
 
-function updateEngineVisibility() {
-  const cloud = engineCloudRadio.checked;
-  const localRow = localModelSelect.closest('.personal-key-section');
-  if (localRow) localRow.style.opacity = cloud ? '0.5' : '1';
-}
-
 async function loadSettings() {
   const result = await chrome.storage.sync.get(null);
 
-  // API key
-  if (result.userApiKey) {
-    userApiKeyInput.value = result.userApiKey;
-  }
-
-  // AI engine
-  const provider = result.provider || DEFAULT_SETTINGS.provider;
-  if (provider === 'cloud') {
-    engineCloudRadio.checked = true;
-  } else {
-    engineLocalRadio.checked = true;
-  }
+  // On-device model
   localModelSelect.value = result.localModel || DEFAULT_SETTINGS.localModel;
-  updateEngineVisibility();
 
   // Dark mode
   const darkMode = result.darkMode || DEFAULT_SETTINGS.darkMode;
@@ -125,63 +86,8 @@ async function loadSettings() {
   biasDetectionCheckbox.checked = settings.biasDetection;
 }
 
-async function testApiKey() {
-  const apiKey = userApiKeyInput.value.trim();
-
-  if (!apiKey) {
-    showKeyStatus('Please enter an API key', 'error');
-    return;
-  }
-
-  showKeyStatus('Testing connection...', 'info');
-  testKeyBtn.disabled = true;
-
-  try {
-    // Create timeout promise (10 seconds)
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error('timeout'));
-      }, 10000);
-    });
-
-    // Test by making a simple request to list models (lightweight test)
-    const fetchPromise = fetch(`${GEMINI_API_CONFIG.testEndpoint}?key=${apiKey}`);
-
-    // Race fetch against timeout
-    const response = await Promise.race([fetchPromise, timeoutPromise]);
-
-    if (response.ok) {
-      showKeyStatus('✓ Connection successful! API key is valid.', 'success');
-    } else {
-      showKeyStatus(`✗ Invalid API key (status: ${response.status})`, 'error');
-    }
-  } catch (error) {
-    if (error.message === 'timeout') {
-      showKeyStatus('✗ Request timed out - please try again', 'error');
-    } else {
-      showKeyStatus(`✗ Error: ${error.message}`, 'error');
-    }
-  } finally {
-    testKeyBtn.disabled = false;
-  }
-}
-
-function showKeyStatus(message, type) {
-  keyStatus.textContent = message;
-  keyStatus.className = `status-message ${type}`;
-  keyStatus.style.display = 'block';
-}
-
 async function saveSettings() {
-  const userApiKey = userApiKeyInput.value.trim();
-  const provider = engineCloudRadio.checked ? 'cloud' : 'local';
   const localModel = localModelSelect.value;
-
-  // The API key is only required for the Cloud engine
-  if (provider === 'cloud' && !userApiKey) {
-    showKeyStatus('The Cloud engine needs a Gemini API key — or switch to the On-device engine', 'error');
-    return;
-  }
 
   // Get dark mode selection
   let darkMode = 'auto';
@@ -192,9 +98,7 @@ async function saveSettings() {
   }
 
   const settings = {
-    userApiKey: userApiKey,
     darkMode: darkMode,
-    provider: provider,
     localModel: localModel,
     settings: {
       logicalFallacies: logicalFallaciesCheckbox.checked,
@@ -213,8 +117,6 @@ async function saveSettings() {
     saveBtn.style.background = '#1a1a1a';
   }, 2000);
 
-  // Notify background script
-  chrome.runtime.sendMessage({ type: 'settingsUpdated' });
 }
 
 async function resetToDefaults() {
@@ -230,7 +132,7 @@ async function resetToDefaults() {
 }
 
 async function loadUsageInfo() {
-  const result = await chrome.storage.sync.get(['usage', 'provider', 'userApiKey']);
+  const result = await chrome.storage.sync.get(['usage', 'localModel']);
   const usage = result.usage || DEFAULT_SETTINGS.usage;
 
   const today = new Date().toISOString().split('T')[0];
@@ -242,20 +144,7 @@ async function loadUsageInfo() {
     usage.count = 0;
   }
 
-  // Check if user has an API key configured
-  const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
-
-  const provider = result.provider || DEFAULT_SETTINGS.provider;
-
-  let html = '';
-
-  if (provider === 'local') {
-    html = '<p>✓ <strong>On-device engine</strong> — private, no API key needed</p>';
-  } else if (hasApiKey) {
-    html = '<p>✓ API key configured - <strong>using Gemini</strong></p>';
-  } else {
-    html = '<p style="color: #d32f2f;">⚠️ Cloud mode selected but no API key configured</p>';
-  }
+  let html = '<p>✓ <strong>On-device engine</strong> — private and fully local</p>';
 
   usageInfo.innerHTML = html;
 }

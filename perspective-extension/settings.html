@@ -11,56 +11,18 @@
     <h1>Perspective</h1>
     <p class="subtitle">Settings</p>
 
-    <!-- AI Engine Section -->
+    <!-- On-device Model Section -->
     <section class="settings-section">
-      <h2>AI Engine</h2>
-      <p class="section-description">Choose how Perspective analyzes articles.</p>
-
-      <div class="radio-group">
-        <div class="radio-option">
-          <input type="radio" id="engine-local" name="engine-mode" value="local" checked>
-          <label for="engine-local">
-            <span class="option-title">On-device (private)</span>
-            <span class="option-description">Runs a small AI model inside your browser. No API key needed; works offline after the first load.</span>
-            <span class="option-note">Models: Gemma 3 1B (recommended), Gemma 2 2B, Qwen2.5 0.5B</span>
-          </label>
-        </div>
-
-        <div class="radio-option">
-          <input type="radio" id="engine-cloud" name="engine-mode" value="cloud">
-          <label for="engine-cloud">
-            <span class="option-title">Cloud (Gemini)</span>
-            <span class="option-description">Google Gemini 2.5 Flash via your own free API key. Higher quality; the article excerpt leaves your browser.</span>
-            <span class="option-note">Requires the API key below</span>
-          </label>
-        </div>
-      </div>
+      <h2>On-device Model (beta)</h2>
+      <p class="section-description">Perspective runs a small AI model entirely on this device. It downloads once, then works offline — nothing you read ever leaves your browser.</p>
 
       <div class="personal-key-section">
-        <label for="local-model">On-device model</label>
+        <label for="local-model">Model</label>
         <select id="local-model" style="width: 100%; padding: 10px; margin-top: 4px; border-radius: 6px;">
-          <option value="gemma3-1b-it-q4f16_1-MLC">Gemma 3 1B — recommended (~0.8 GB, first load)</option>
-          <option value="gemma-2-2b-it-q4f16_1-MLC">Gemma 2 2B — higher quality (~2 GB, first load)</option>
-          <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Qwen2.5 0.5B — fastest (~0.4 GB, first load)</option>
+          <option value="gemma3-1b-it-q4f16_1-MLC">Gemma 3 1B — recommended (~0.8 GB, one-time)</option>
+          <option value="gemma-2-2b-it-q4f16_1-MLC">Gemma 2 2B — higher quality (~2 GB, one-time)</option>
         </select>
-      </div>
-    </section>
-
-    <!-- API Configuration Section -->
-    <section class="settings-section">
-      <h2>Gemini API Configuration (Cloud Mode)</h2>
-      <p class="section-description">Only needed when the Cloud engine is selected. Get a free key from Google AI Studio.</p>
-
-      <div class="personal-key-section">
-        <label for="user-api-key">Your Gemini API Key</label>
-        <div class="key-input-container">
-          <input type="password" id="user-api-key" placeholder="Enter your Gemini API key">
-          <button id="test-key-btn" class="btn-secondary">Test Connection</button>
-        </div>
-        <div class="option-note" style="margin-bottom: 8px;">
-          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a free API key from Google AI Studio</a>
-        </div>
-        <div id="key-status" class="status-message"></div>
+        <p class="option-note" style="margin-top: 8px;">Smaller model: fast and fully private, but less detailed than the big cloud AI services.</p>
       </div>
     </section>
 
@@ -145,7 +107,7 @@
         <p id="usage-count">Loading usage information...</p>
       </div>
       <p class="option-note" style="margin-top: 12px;">
-        Cloud mode note: Gemini's free tier allows 15 requests per minute and 1 million tokens per day - plenty for regular use. On-device mode has no limits at all.
+        Everything runs on your device: no API keys, no accounts, no usage limits, no data leaving your browser.
       </p>
     </section>
   </div>
