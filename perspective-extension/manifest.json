@@ -1,13 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Perspective",
-  "version": "0.6.0",
-  "description": "A critical thinking coach to help you analyze web pages.",
+  "version": "0.7.0",
+  "description": "A critical thinking coach to help you analyze web pages — with a private on-device AI model or Google Gemini.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting",
     "https://generativelanguage.googleapis.com/*"
+  ],
+  "host_permissions": [
+    "https://huggingface.co/*",
+    "https://*.hf.co/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -16,6 +21,9 @@
     "default_popup": "popup.html"
   },
   "options_page": "settings.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "web_accessible_resources": [
     {
       "resources": [

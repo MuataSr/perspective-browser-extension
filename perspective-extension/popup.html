@@ -42,10 +42,40 @@
     </div>
 
     <div class="settings-panel-content">
+      <!-- AI Engine Section -->
+      <section class="settings-section">
+        <h3>AI Engine</h3>
+        <p class="section-description">Choose how Perspective analyzes articles.</p>
+        <div class="radio-group">
+          <div class="radio-option">
+            <input type="radio" id="engine-local" name="engine-mode" value="local" checked>
+            <label for="engine-local">
+              <span class="option-title">On-device (private)</span>
+              <span class="option-description">Runs a small AI model inside your browser. No API key, works offline after the first load.</span>
+            </label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="engine-cloud" name="engine-mode" value="cloud">
+            <label for="engine-cloud">
+              <span class="option-title">Cloud (Gemini)</span>
+              <span class="option-description">Higher-quality analysis with your own free Google Gemini API key.</span>
+            </label>
+          </div>
+        </div>
+        <div class="personal-key-section">
+          <label for="local-model">On-device model</label>
+          <select id="local-model" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 6px;">
+            <option value="gemma3-1b-it-q4f16_1-MLC">Gemma 3 1B — recommended (~0.8 GB, first load)</option>
+            <option value="gemma-2-2b-it-q4f16_1-MLC">Gemma 2 2B — higher quality (~2 GB, first load)</option>
+            <option value="Qwen2.5-0.5B-Instruct-q4f16_1-MLC">Qwen2.5 0.5B — fastest (~0.4 GB, first load)</option>
+          </select>
+        </div>
+      </section>
+
       <!-- API Configuration Section -->
       <section class="settings-section">
-        <h3>Gemini API Configuration</h3>
-        <p class="section-description">Enter your free Gemini API key to use Perspective.</p>
+        <h3>Gemini API Configuration (Cloud Mode)</h3>
+        <p class="section-description">Only needed when the Cloud engine is selected. Get a free key from Google AI Studio.</p>
         <div class="personal-key-section">
           <label for="user-api-key">Your Gemini API Key</label>
           <div class="key-input-container">
@@ -134,6 +164,6 @@
     </div>
   </div>
 
-  <script src="popup.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

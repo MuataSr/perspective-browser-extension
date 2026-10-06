@@ -1,3 +1,93 @@
+import * as webllm from './lib/webllm.bundle.js';
+
+// ==================== ON-DEVICE (LOCAL) ENGINE ====================
+
+const LOCAL_MODELS = {
+  'gemma3-1b-it-q4f16_1-MLC': 'Gemma 3 1B',
+  'gemma-2-2b-it-q4f16_1-MLC': 'Gemma 2 2B',
+  'Qwen2.5-0.5B-Instruct-q4f16_1-MLC': 'Qwen2.5 0.5B'
+};
+
+const DEFAULT_LOCAL_MODEL = 'gemma3-1b-it-q4f16_1-MLC';
+
+let localEngine = null;      // MLCEngine instance (lives as long as this popup is open)
+let localEngineModel = null; // model id currently loaded
+
+function localModelLabel(modelId) {
+  return LOCAL_MODELS[modelId] || modelId;
+}
+
+// Cache key — MUST match generateCacheKey() in background.js (local branch)
+function localCacheKey(url, nestedSettings, modelId) {
+  return 'article_cache_' + btoa(url + '|' + JSON.stringify(nestedSettings || {}) + '|local|' + modelId);
+}
+
+async function ensureLocalEngine(modelId) {
+  if (localEngine && localEngineModel === modelId) {
+    return localEngine;
+  }
+  if (localEngine) {
+    try { await localEngine.unload(); } catch (e) { /* ignore */ }
+    localEngine = null;
+    localEngineModel = null;
+  }
+
+  const engine = new webllm.MLCEngine({
+    initProgressCallback: (report) => {
+      const el = document.getElementById('visual-spectrum-placeholder');
+      if (!el) return;
+      const pct = Math.round((report.progress || 0) * 100);
+      el.innerHTML = `Loading ${localModelLabel(modelId)} — first load downloads the model (up to ~2 GB) and may take a few minutes.<br><strong>${pct}%</strong> — keep this window open.`;
+    }
+  });
+  await engine.reload(modelId);
+  localEngine = engine;
+  localEngineModel = modelId;
+  return engine;
+}
+
+function buildLocalPrompt(text) {
+  const excerpt = text.substring(0, 1400);
+  return `You are "Perspective", a critical thinking coach. Analyze the article excerpt below. Reply using EXACTLY these four headings, in this order, with 2-3 short bullet points under each (each bullet starts with "- "). If a section has nothing to report, write "- None found." No introductions, no conclusions, no other markdown beyond the headings and dashes.
+
+## Counter Arguments
+## Logical Fallacies & Analysis
+## Loaded Language
+## Source Credibility & Bias
+
+Article excerpt:
+---
+${excerpt}
+---
+
+Response:`;
+}
+
+async function analyzeLocally(text, modelId, cacheKey) {
+  const engine = await ensureLocalEngine(modelId);
+  const el = document.getElementById('visual-spectrum-placeholder');
+  if (el) el.innerHTML = `Analyzing on-device with ${localModelLabel(modelId)}<span class="ellipsis"></span>`;
+
+  const completion = await engine.chat.completions.create({
+    messages: [{ role: 'user', content: buildLocalPrompt(text) }],
+    temperature: 0.3,
+    max_tokens: 600
+  });
+
+  const message = completion && completion.choices && completion.choices[0] && completion.choices[0].message;
+  const result = ((message && message.content) || '').trim();
+  if (!result) {
+    throw new Error('The on-device model returned an empty response. Try again or pick a different model in Settings.');
+  }
+
+  try {
+    await chrome.storage.local.set({ [cacheKey]: { data: result, timestamp: new Date().toISOString() } });
+  } catch (e) {
+    console.warn('Could not cache local result:', e);
+  }
+  return result;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const placeholder = document.getElementById('visual-spectrum-placeholder');
   const settingsLink = document.getElementById('settings-link');
@@ -422,7 +512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             placeholder.innerText = 'Error: ' + chrome.runtime.lastError.message;
             return;
           }
-          
+
           // 2. Inject our script to get the article content
           chrome.scripting.executeScript(
             {
@@ -433,75 +523,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (injectionResults && injectionResults.length > 0 && injectionResults[0].result) {
                 const article = injectionResults[0].result;
                 if (article && article.textContent) {
-                  placeholder.innerHTML = 'Article extracted. Finding counterarguments<span class="ellipsis"></span>';
-                  placeholder.classList.add('loading');
-                  
-                  // 3. Send the clean text to the background script for analysis
-                  // Wrap sendMessage in a Promise with timeout
-                  const messagePromise = new Promise((resolve) => {
-                    chrome.runtime.sendMessage(
-                      { type: 'getCounterarguments', text: article.textContent },
-                      (response) => {
-                        if (chrome.runtime.lastError) {
-                          resolve({ error: chrome.runtime.lastError.message });
-                          return;
-                        }
-                        resolve(response);
-                      }
-                    );
-                  });
-
-                  // Create timeout promise (50 seconds - background has 45s timeout)
-                  const timeoutPromise = new Promise((resolve) => {
-                    setTimeout(() => {
-                      resolve({ error: 'timeout' });
-                    }, 50000);
-                  });
-
-                  // Wait for either response or timeout
-                  Promise.race([messagePromise, timeoutPromise])
-                    .then((response) => {
-                      if (response && response.error === 'timeout') {
-                        placeholder.classList.remove('loading');
-                        placeholder.innerHTML = `<div class="error-message">⚠️ Request timed out. Please try again. If this persists, try again later.</div>`;
-                        return;
-                      }
-
-                      if (chrome.runtime.lastError) {
-                        placeholder.innerText = 'Error: ' + chrome.runtime.lastError.message;
-                        return;
-                      }
-                      if (response && response.data) {
-                        // 4. Display the final result with formatting
-                        if (response.data.startsWith('Error:') || response.data.startsWith('⚠️')) {
-                          // Show error message with proper styling
-                          placeholder.classList.remove('loading');
-
-                          // Check if it's a limit reached message
-                          if (response.data.includes('Daily Limit Reached')) {
-                            const formattedMessage = response.data.replace(
-                              'Add your own API key for unlimited use:',
-                              `<a href="#" onclick="chrome.runtime.openOptionsPage(); return false;" style="color: var(--error-text); text-decoration: underline;">Add your own API key for unlimited use</a>`
-                            );
-                            placeholder.innerHTML = `<div class="error-message">${formattedMessage}</div>`;
-                          } else {
-                            placeholder.innerHTML = `<div class="error-message">${response.data}</div>`;
-                          }
-                        } else {
-                          // Format bulleted list
-                          placeholder.classList.remove('loading');
-
-                          // Show cached indicator if result is from cache
-                          if (response.fromCache) {
-                            formatCounterarguments(response.data, true);
-                          } else {
-                            formatCounterarguments(response.data, false);
-                          }
-                        }
-                      } else {
-                        placeholder.innerText = 'No response from analysis service.';
-                      }
-                    });
+                  runAnalysis(article.textContent, activeTab.url || '');
                 } else {
                   placeholder.innerText = 'Readability could not extract article content.';
                 }
@@ -517,17 +539,140 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Decide which engine to use, then run the analysis
+  async function runAnalysis(articleText, url) {
+    let selected;
+    try {
+      selected = await chrome.storage.sync.get({
+        provider: 'local',
+        localModel: DEFAULT_LOCAL_MODEL,
+        userApiKey: '',
+        settings: {
+          logicalFallacies: true,
+          sourceCredibility: true,
+          biasDetection: true
+        }
+      });
+    } catch (e) {
+      placeholder.classList.remove('loading');
+      placeholder.innerText = 'Error loading settings: ' + e.message;
+      return;
+    }
+
+    if (selected.provider === 'local') {
+      await runLocalAnalysis(articleText, url, selected);
+    } else {
+      runCloudAnalysis(articleText);
+    }
+  }
+
+  // ---- On-device engine path (runs here in the popup; after the one-time model download, no network needed) ----
+  async function runLocalAnalysis(articleText, url, selected) {
+    const modelId = selected.localModel || DEFAULT_LOCAL_MODEL;
+
+    if (!('gpu' in navigator)) {
+      placeholder.classList.remove('loading');
+      placeholder.innerHTML = '<div class="error-message">On-device mode needs WebGPU (Chrome 113 or newer). Switch to the Cloud engine in <a href="#" id="open-settings-link">Settings</a>, or update your browser.</div>';
+      const link = document.getElementById('open-settings-link');
+      if (link) {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          chrome.runtime.openOptionsPage();
+        });
+      }
+      return;
+    }
+
+    const cacheKey = localCacheKey(url, selected.settings, modelId);
+
+    // Serve a fresh cached result if one exists
+    try {
+      const cached = await chrome.storage.local.get(cacheKey);
+      if (cached[cacheKey]) {
+        const ageDays = (Date.now() - new Date(cached[cacheKey].timestamp).getTime()) / (1000 * 60 * 60 * 24);
+        if (ageDays < 7) {
+          placeholder.classList.remove('loading');
+          formatCounterarguments(cached[cacheKey].data, true);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Cache read failed:', e);
+    }
+
+    try {
+      placeholder.innerHTML = `Preparing ${localModelLabel(modelId)}<span class="ellipsis"></span>`;
+      placeholder.classList.add('loading');
+      const result = await analyzeLocally(articleText, modelId, cacheKey);
+      placeholder.classList.remove('loading');
+      formatCounterarguments(result, false);
+    } catch (error) {
+      console.error('On-device analysis failed:', error);
+      placeholder.classList.remove('loading');
+      placeholder.innerHTML = `<div class="error-message">On-device analysis failed: ${error.message}</div>`;
+    }
+  }
+
+  // ---- Cloud engine path (background service worker -> Gemini) ----
+  function runCloudAnalysis(articleText) {
+    placeholder.innerHTML = 'Article extracted. Finding counterarguments<span class="ellipsis"></span>';
+    placeholder.classList.add('loading');
+
+    const messagePromise = new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { type: 'getCounterarguments', text: articleText },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            resolve({ error: chrome.runtime.lastError.message });
+            return;
+          }
+          resolve(response);
+        }
+      );
+    });
+
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ error: 'timeout' });
+      }, 50000);
+    });
+
+    Promise.race([messagePromise, timeoutPromise]).then((response) => {
+      if (response && response.error === 'timeout') {
+        placeholder.classList.remove('loading');
+        placeholder.innerHTML = '<div class="error-message">⚠️ Request timed out. Please try again.</div>';
+        return;
+      }
+      if (response && response.data) {
+        if (response.data.startsWith('Error:') || response.data.startsWith('⚠️')) {
+          placeholder.classList.remove('loading');
+          placeholder.innerHTML = `<div class="error-message">${response.data}</div>`;
+        } else {
+          placeholder.classList.remove('loading');
+          formatCounterarguments(response.data, !!response.fromCache);
+        }
+      } else {
+        placeholder.innerText = 'No response from analysis service.';
+      }
+    });
+  }
+
   // Load usage information from chrome.storage
   async function loadUsageInfo() {
     try {
       const result = await chrome.storage.sync.get({
-        userApiKey: ''
+        userApiKey: '',
+        provider: 'local',
+        localModel: DEFAULT_LOCAL_MODEL
       });
 
       const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
 
-      if (hasApiKey) {
-        usageInfo.textContent = 'Gemini';
+      if (result.provider === 'local') {
+        usageInfo.textContent = 'On-device • ' + localModelLabel(result.localModel);
+        usageInfo.style.color = 'var(--text-tertiary)';
+      } else if (hasApiKey) {
+        usageInfo.textContent = 'Cloud • Gemini';
         usageInfo.style.color = 'var(--text-tertiary)';
       } else {
         usageInfo.textContent = 'Setup required';
@@ -578,15 +723,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Show which part of the engine settings is active
+  function updateEngineVisibility() {
+    const cloud = document.getElementById('engine-cloud').checked;
+    const localRow = document.getElementById('local-model').closest('.personal-key-section');
+    if (localRow) localRow.style.opacity = cloud ? '0.5' : '1';
+  }
+
   // Load settings from chrome.storage
   async function loadSettings() {
     try {
       const result = await chrome.storage.sync.get({
         userApiKey: '',
         darkMode: 'auto',
-        logicalFallacies: true,
-        sourceCredibility: true,
-        biasDetection: true
+        provider: 'local',
+        localModel: DEFAULT_LOCAL_MODEL,
+        settings: {
+          logicalFallacies: true,
+          sourceCredibility: true,
+          biasDetection: true
+        }
       });
 
       // API Key
@@ -594,13 +750,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('user-api-key').value = result.userApiKey;
       }
 
+      // AI Engine
+      document.querySelector(`input[name="engine-mode"][value="${result.provider}"]`).checked = true;
+      document.getElementById('local-model').value = result.localModel;
+      updateEngineVisibility();
+
       // Theme
       document.querySelector(`input[name="theme-mode"][value="${result.darkMode}"]`).checked = true;
 
       // Analysis Features
-      document.getElementById('logical-fallacies').checked = result.logicalFallacies;
-      document.getElementById('source-credibility').checked = result.sourceCredibility;
-      document.getElementById('bias-detection').checked = result.biasDetection;
+      // Analysis Features (the nested settings object is canonical; fall back to legacy top-level keys)
+      const features = result.settings || {};
+      document.getElementById('logical-fallacies').checked = features.logicalFallacies !== undefined ? features.logicalFallacies : true;
+      document.getElementById('source-credibility').checked = features.sourceCredibility !== undefined ? features.sourceCredibility : true;
+      document.getElementById('bias-detection').checked = features.biasDetection !== undefined ? features.biasDetection : true;
 
       // Load usage info for settings panel
       await loadUsageInfoForSettings();
@@ -615,6 +778,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const result = await chrome.storage.sync.get({
         userApiKey: '',
+        provider: 'local',
+        localModel: DEFAULT_LOCAL_MODEL,
         usage: {
           date: new Date().toISOString().split('T')[0],
           count: 0
@@ -623,12 +788,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const hasApiKey = result.userApiKey && result.userApiKey.trim() !== '';
       const settingsUsageCount = document.getElementById('settings-usage-count');
+      const provider = result.provider || 'local';
+      const localModel = result.localModel || DEFAULT_LOCAL_MODEL;
 
-      if (hasApiKey) {
-        settingsUsageCount.textContent = '✓ API key configured - using Gemini';
+      if (provider === 'local') {
+        settingsUsageCount.textContent = '✓ On-device engine — private, no API key needed (' + localModelLabel(localModel) + ')';
+        settingsUsageCount.style.color = 'var(--text-primary)';
+      } else if (hasApiKey) {
+        settingsUsageCount.textContent = '✓ API key configured — using Gemini';
         settingsUsageCount.style.color = 'var(--text-primary)';
       } else {
-        settingsUsageCount.textContent = '⚠️ No API key configured';
+        settingsUsageCount.textContent = '⚠️ Cloud mode selected but no API key configured';
         settingsUsageCount.style.color = 'var(--error-text)';
       }
     } catch (error) {
@@ -641,6 +811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const userApiKey = document.getElementById('user-api-key').value;
       const darkMode = document.querySelector('input[name="theme-mode"]:checked').value;
+      const provider = document.querySelector('input[name="engine-mode"]:checked').value;
+      const localModel = document.getElementById('local-model').value;
       const logicalFallacies = document.getElementById('logical-fallacies').checked;
       const sourceCredibility = document.getElementById('source-credibility').checked;
       const biasDetection = document.getElementById('bias-detection').checked;
@@ -648,9 +820,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       await chrome.storage.sync.set({
         userApiKey,
         darkMode,
+        provider,
+        localModel,
         logicalFallacies,
         sourceCredibility,
-        biasDetection
+        biasDetection,
+        settings: {
+          logicalFallacies,
+          sourceCredibility,
+          biasDetection
+        }
       });
 
       console.log('Settings saved successfully');
@@ -682,6 +861,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // Reset form inputs
       document.getElementById('user-api-key').value = '';
+      document.getElementById('engine-local').checked = true;
+      document.getElementById('local-model').value = DEFAULT_LOCAL_MODEL;
+      updateEngineVisibility();
       document.getElementById('theme-auto').checked = true;
       document.getElementById('logical-fallacies').checked = true;
       document.getElementById('source-credibility').checked = true;
@@ -762,4 +944,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Test key button
   document.getElementById('test-key-btn').addEventListener('click', testApiKey);
+
+  // AI engine radio buttons
+  document.getElementById('engine-local').addEventListener('change', updateEngineVisibility);
+  document.getElementById('engine-cloud').addEventListener('change', updateEngineVisibility);
 });

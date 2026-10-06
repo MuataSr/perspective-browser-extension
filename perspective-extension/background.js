@@ -18,7 +18,9 @@ const CACHE_CLEANUP_THRESHOLD = 100; // Clean up if we have more than 100 cached
  * Generate cache key from URL and settings
  */
 function generateCacheKey(url, settings) {
-  const settingsSignature = JSON.stringify(settings.settings);
+  const provider = settings.provider || 'local';
+  const modelPart = provider === 'local' ? (settings.localModel || '') : '';
+  const settingsSignature = JSON.stringify(settings.settings) + '|' + provider + '|' + modelPart;
   return CACHE_KEY_PREFIX + btoa(url + '|' + settingsSignature);
 }
 
@@ -147,6 +149,8 @@ async function getCurrentTabUrl() {
 async function getSettings() {
   const result = await chrome.storage.sync.get({
     userApiKey: '',
+    provider: 'local',
+    localModel: 'gemma3-1b-it-q4f16_1-MLC',
     settings: {
       logicalFallacies: true,
       sourceCredibility: true,
@@ -311,11 +315,13 @@ async function getCounterargumentsFromGemini(text, settings, url) {
  */
 function createNoApiKeyMessage() {
   const settingsLink = 'chrome-extension://' + chrome.runtime.id + '/settings.html';
-  return `⚠️ API Key Required
+  return `⚠️ API Key Required (Cloud Mode)
 
-Perspective needs your Gemini API key to analyze articles.
+Perspective is set to the Cloud engine but no Gemini API key is configured.
 
-<a href="${settingsLink}" style="color: var(--error-text); text-decoration: underline;">Open Settings to add your API key</a>
+Switch to the free On-device engine (no key needed) or add a key — both in Settings.
+
+<a href="${settingsLink}" style="color: var(--error-text); text-decoration: underline;">Open Settings</a>
 
 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style="color: var(--error-text); text-decoration: underline;">Get a free API key from Google AI Studio</a>`;
 }

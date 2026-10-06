@@ -3,7 +3,7 @@
 > A Chrome extension that acts as a critical thinking coach, providing counterarguments, logical fallacy detection, and bias analysis for web articles.
 
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-orange)](https://chrome.google.com/webstore)
-[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](#)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](#)
 [![OER](https://img.shields.io/badge/Open-Educational-Resource-red.svg)]()
 
@@ -11,7 +11,7 @@
 
 ## What is Perspective?
 
-**Perspective** is a Chrome extension designed to enhance critical thinking by providing AI-powered analysis of web articles. When you encounter an article online, Perspective can:
+**Perspective** is a Chrome extension designed to enhance critical thinking by providing AI-powered analysis of web articles. It can run a small AI model **entirely on your device** — private, no account, no API key — or optionally use Google Gemini. When you encounter an article online, Perspective can:
 
 - Generate counterarguments and alternative viewpoints
 - Detect logical fallacies in the reasoning (ad hominem, strawman, false dilemmas, etc.)
@@ -26,7 +26,8 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 
 ### Core Functionality
 - **Instant Analysis** - Click the extension icon while reading any article
-- **AI-Powered Insights** - Uses Google Gemini 2.5 Flash for analysis
+- **Two AI Engines** - On-device (private, no API key, works offline after first load) or Cloud (Google Gemini 2.5 Flash with your own key)
+- **On-Device Models** - Gemma 3 1B (recommended), Gemma 2 2B, or Qwen2.5 0.5B running locally via WebGPU
 - **Minimalist UI** - Clean, distraction-free design that puts content first
 - **Smart Caching** - Automatically caches results for 7 days to speed up repeated analyses
 
@@ -39,7 +40,7 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 ### User Experience
 - **Dark Mode** - Auto-detect system preference or choose manually
 - **Customizable** - Toggle analysis features on/off
-- **API Key Only** - Bring your own Gemini API key for unlimited use
+- **Private by Default** - The on-device engine needs no account, no key, and no network after the model is downloaded
 
 ---
 
@@ -80,19 +81,29 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 4. **Start Using**
    - Navigate to any article webpage
    - Click the Perspective icon
-   - Enter your Gemini API key in Settings
-   - Wait for analysis (usually 5-15 seconds)
+   - Wait for analysis (usually a few seconds on a GPU)
+   - First run on the On-device engine downloads the model once (~0.4–2 GB depending on model); keep the popup open while it loads — after that it runs locally
+   - Prefer cloud? Settings → AI Engine → Cloud, add a Gemini API key, done
 
 ---
 
-## API Key Setup
+## AI Engines
 
-Perspective uses **Google Gemini 2.5 Flash** for analysis. You need to provide your own API key:
+| Engine | Model(s) | Needs | Privacy | First load |
+|---|---|---|---|---|
+| **On-device** (default) | Gemma 3 1B, Gemma 2 2B, Qwen2.5 0.5B | Chrome 113+ with WebGPU | Article text never leaves your browser | One-time model download (~0.4–2 GB) |
+| **Cloud** | Gemini 2.5 Flash | Free Google AI Studio API key | Article excerpt is sent to Google | None |
+
+Pick the engine in Settings → AI Engine. The on-device engine runs [WebLLM](https://github.com/mlc-ai/web-llm) locally via WebGPU; browser-cached models are reused on later visits.
+
+## API Key Setup (Cloud Mode only)
+
+The Cloud engine uses **Google Gemini 2.5 Flash**. You need to provide your own API key:
 
 1. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. Click the settings icon in the extension popup
+2. Open Settings → Gemini API Configuration
 3. Paste your API key and save
-4. The extension is now ready to use
+4. Select **Cloud (Gemini)** as the AI Engine
 
 **Note**: API calls are billed by Google based on usage. The Gemini 2.5 Flash model is cost-effective for this use case.
 
@@ -109,15 +120,16 @@ Perspective uses **Google Gemini 2.5 Flash** for analysis. You need to provide y
 ```
 perspective-extension/
 ├── manifest.json              # Extension configuration
-├── background.js              # Service worker - AI integration, caching
+├── background.js              # Service worker - cloud (Gemini) integration, caching
 ├── popup.html                 # Main popup UI
-├── popup.js                   # Popup logic
+├── popup.js                   # Popup logic + on-device engine (WebLLM)
 ├── popup.css                  # Popup styling
 ├── settings.html              # Settings page UI
 ├── settings.js                # Settings logic
 ├── settings.css               # Settings styling
 └── lib/
-    └── Readability.js         # Mozilla's content extraction
+    ├── Readability.js         # Mozilla's content extraction
+    └── webllm.bundle.js       # WebLLM runtime (@mlc-ai/web-llm 0.2.85, bundled)
 ```
 
 ### Key Technologies
@@ -125,7 +137,8 @@ perspective-extension/
 - **Vanilla JavaScript** (no frameworks)
 - **chrome.storage API** (for settings)
 - **Readability.js** (content extraction)
-- **Google Gemini 2.5 Flash** (AI analysis)
+- **WebLLM / WebGPU** (on-device model inference)
+- **Google Gemini 2.5 Flash** (optional cloud analysis)
 
 ### Building from Source
 This extension requires no build process - it's pure HTML, CSS, and JavaScript.
@@ -155,17 +168,18 @@ User clicks extension icon
     ↓
 popup.js injects Readability.js into page
     ↓
-popup.js extracts article text (first 1000 chars)
+popup.js extracts article text (first ~1000–1400 chars)
     ↓
-popup.js sends text to background.js
+popup.js checks cache (by URL + engine + settings)
     ↓
-background.js checks cache (by URL + settings)
+    ├─ On-device engine: WebLLM runs the model locally (WebGPU)
+    │    → result cached in chrome.storage.local (7 days)
+    │
+    └─ Cloud engine: sends text to background.js
+         → checks cache → calls Gemini API with user's key
+         → result cached in chrome.storage.local (7 days)
     ↓
-If not cached: calls Gemini API with user's API key
-    ↓
-Response cached in chrome.storage.local (7-day expiration)
-    ↓
-popup.js receives response, parses sections, displays in accordion
+popup.js parses sections, displays in accordion
 ```
 
 ### Core Components
@@ -173,15 +187,17 @@ popup.js receives response, parses sections, displays in accordion
 **1. Popup Layer** (`popup.html`, `popup.js`, `popup.css`)
 - User interface with accordion-style results display
 - Content extraction via injected Readability.js
+- On-device engine: loads and runs the WebLLM model, shows download/init progress
 - Results rendering and interaction
 
 **2. Background Script** (`background.js`)
-- Google Gemini API integration
-- Response caching (7-day expiration, 100-entry limit)
-- Prompt building based on user settings
+- Cloud (Gemini) API integration
+- Response caching (7-day expiration, 100-entry limit) shared by both engines
+- Prompt building for the cloud engine
 
 **3. Settings Panel** (`settings.html`, `settings.js`, `settings.css`)
-- API key management
+- AI engine selection (on-device vs. cloud) + on-device model picker
+- API key management (cloud mode)
 - Theme selection (auto/dark/light)
 - Feature toggles (logical fallacies, source credibility, bias detection)
 
@@ -195,8 +211,12 @@ popup.js receives response, parses sections, displays in accordion
 
 ### Settings Options
 
-**API Configuration**
-- **API Key**: Your Google Gemini API key (required)
+**AI Engine**
+- **On-device**: Private, no API key, runs locally (WebGPU required)
+- **Cloud**: Gemini via your own API key
+
+**API Configuration (Cloud Mode)**
+- **API Key**: Your Google Gemini API key (only needed for the cloud engine)
 
 **Theme**
 - **Auto**: Follow system preference
