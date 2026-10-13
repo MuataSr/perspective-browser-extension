@@ -1,24 +1,26 @@
 # Perspective - Critical Thinking Chrome Extension
 
-> A Chrome extension that acts as a critical thinking coach — powered by a small AI model that runs entirely on your device. No API keys, no accounts, no data leaving your browser.
+> A Chrome extension that acts as a critical thinking coach, powered by a small AI model that runs entirely on your device. No API keys, no accounts, no data leaving your browser.
 
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-orange)](https://chrome.google.com/webstore)
-[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](#)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](#)
+> Two builds exist. This repository is the on-device build (v0.8.0): a small Gemma model runs locally through WebLLM and WebGPU, so nothing you read leaves your browser. The [Chrome Web Store listing](https://chromewebstore.google.com/detail/perspective/jhhpmeekehlacanekkgebmliabfcjgdi) is the earlier cloud build (v0.6.0), which analyzes articles with Google Gemini and needs your own Google AI Studio key. Both are free. Pick the tradeoff you want.
+
+[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Perspective-orange)](https://chromewebstore.google.com/detail/perspective/jhhpmeekehlacanekkgebmliabfcjgdi)
+[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](https://github.com/MuataSr/perspective-browser-extension)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![OER](https://img.shields.io/badge/Open-Educational-Resource-red.svg)]()
 
 ---
 
 ## What is Perspective?
 
-**Perspective** is a Chrome extension that enhances critical thinking by analyzing web articles — with an AI model that runs **entirely on your device**. When you encounter an article online, Perspective can:
+**Perspective** is a Chrome extension that enhances critical thinking by analyzing web articles with an AI model that runs **entirely on your device**. When you encounter an article online, Perspective can:
 
 - Generate counterarguments and alternative viewpoints
 - Detect logical fallacies in the reasoning (ad hominem, strawman, false dilemmas, etc.)
 - Assess source credibility and author expertise
 - Identify bias and loaded language in the presentation
 
-Everything happens locally: no API key, no account, no server. The model downloads once (~0.8–2 GB depending on which Gemma you pick), then Perspective works offline — your reading never leaves the browser.
+Everything happens locally: no API key, no account, no server. The model downloads once (~0.8–2 GB depending on which Gemma you pick), then Perspective works offline. Your reading never leaves the browser.
 
 Perfect for students, educators, journalists, and anyone who wants to engage more thoughtfully with online content.
 
@@ -45,7 +47,7 @@ Perfect for students, educators, journalists, and anyone who wants to engage mor
 | **Gemma 3 1B** (default) | ~0.8 GB | Fast, recommended |
 | **Gemma 2 2B** | ~2 GB | Higher quality |
 
-Smaller models are fast and fully private, but less detailed than the big cloud AI services — that's the trade for privacy and zero cost.
+Smaller models are fast and fully private, but less detailed than the big cloud AI services. That's the trade for privacy and zero cost.
 
 ### User Experience
 - **Dark Mode** - Auto-detect system preference or choose manually
@@ -96,7 +98,7 @@ Smaller models are fast and fully private, but less detailed than the big cloud 
 4. **Start Using**
    - Navigate to any article webpage
    - Click the Perspective icon
-   - First run: approve the one-time model download (keep the popup open while it loads — usually a few minutes). After that, it runs locally.
+   - First run: approve the one-time model download (keep the popup open while it loads; usually a few minutes). After that, it runs locally.
    - Later reads are analyzed in seconds, and results are cached for 7 days
 
 ---
@@ -121,10 +123,10 @@ perspective-extension/
 ### Key Technologies
 - **Chrome Extension Manifest V3**
 - **Vanilla JavaScript** (no frameworks)
-- **WebLLM / WebGPU** — in-browser model inference (runtime bundled; no remote code)
-- **Gemma** — Gemma 3 1B / Gemma 2 2B (MLC builds), downloaded once and cached by the browser
-- **Readability.js** — article text extraction
-- **chrome.storage API** — settings and the local result cache
+- **WebLLM / WebGPU**: in-browser model inference (runtime bundled; no remote code)
+- **Gemma**: Gemma 3 1B / Gemma 2 2B (MLC builds), downloaded once and cached by the browser
+- **Readability.js**: article text extraction
+- **chrome.storage API**: settings and the local result cache
 
 ### Building from Source
 There is no build step: the WebLLM runtime ships in `lib/`. Change any file and reload the extension in `chrome://extensions/`.
@@ -133,7 +135,7 @@ There is no build step: the WebLLM runtime ships in `lib/`. Change any file and 
 
 1. **Load the extension** (see Installation)
 2. **Navigate to an article** (news sites, blogs, etc.)
-3. **Click the Perspective icon** — approve the one-time download on first use
+3. **Click the Perspective icon** and approve the one-time download on first use
 4. **Check the results** in the popup; repeat visits come from the local cache
 5. **Debug if needed:**
    - Popup: Right-click the extension icon → "Inspect popup"
@@ -156,7 +158,7 @@ cache check (by URL + model + settings)
     ↓ (miss)
 first run only: one-time download consent → model download (~0.8–2 GB)
     ↓
-WebLLM runs Gemma locally on the GPU (WebGPU) — no network
+WebLLM runs Gemma locally on the GPU (WebGPU). No network
     ↓
 result cached in chrome.storage.local (7 days)
     ↓
@@ -223,7 +225,7 @@ We welcome contributions! This is an Open Educational Resource (OER) project.
 
 1. **Fork** the repository
 2. **Create** a feature branch
-3. **Make** your changes (keep the local-only philosophy intact — no servers, no keys)
+3. **Make** your changes (keep the local-only philosophy intact: no servers, no keys)
 4. **Submit** a pull request
 
 ## License
